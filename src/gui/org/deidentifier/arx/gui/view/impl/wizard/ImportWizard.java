@@ -27,6 +27,7 @@ import org.deidentifier.arx.io.ImportConfiguration;
 import org.deidentifier.arx.io.ImportConfigurationCSV;
 import org.deidentifier.arx.io.ImportConfigurationExcel;
 import org.deidentifier.arx.io.ImportConfigurationJDBC;
+import org.deidentifier.arx.io.ImportConfigurationSAS;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.wizard.IWizardPage;
 
@@ -72,6 +73,9 @@ public class ImportWizard extends ARXWizard<ImportConfiguration> {
     
     /**  View */
     private ImportWizardPageExcel   xlsPage;
+
+    /** View */
+    private ImportWizardPageSAS sasPage;
 
     /**
      * Holds reference to the page currently being shown
@@ -134,6 +138,9 @@ public class ImportWizard extends ARXWizard<ImportConfiguration> {
 
         xlsPage = new ImportWizardPageExcel(this);
         addPage(xlsPage);
+
+        sasPage = new ImportWizardPageSAS(this);
+        addPage(sasPage);
     }
 
     /**
@@ -175,6 +182,8 @@ public class ImportWizard extends ARXWizard<ImportConfiguration> {
                 return jdbcPage;
             } else if (src == SourceType.EXCEL) {
                 return xlsPage;
+            } else if (src == SourceType.SAS) {
+                return sasPage;
             }
         } else if (currentPage == csvPage) {
             return columnPage;
@@ -185,6 +194,8 @@ public class ImportWizard extends ARXWizard<ImportConfiguration> {
         } else if (currentPage == tablePage) {
             return columnPage;
         } else if (currentPage == xlsPage) {
+            return columnPage;
+        } else if (currentPage == sasPage) {
             return columnPage;
         }
 
@@ -249,16 +260,19 @@ public class ImportWizard extends ARXWizard<ImportConfiguration> {
                                                        data.getFirstRowContainsHeader());
 
         } else if (data.getSourceType() == SourceType.EXCEL) {
-
             configuration = new ImportConfigurationExcel(data.getFileLocation(),
-                                                         data.getExcelSheetIndex(),
-                                                         data.getFirstRowContainsHeader());
+                data.getExcelSheetIndex(),
+                data.getFirstRowContainsHeader());
 
         } else if (data.getSourceType() == SourceType.JDBC) {
 
             configuration = new ImportConfigurationJDBC(data.getJdbcConnection(),
                                                         data.getSelectedJdbcTable());
 
+        } else if (data.getSourceType() == SourceType.SAS) {
+            configuration = new ImportConfigurationSAS(data.getFileLocation(),
+                data.getExcelSheetIndex(),
+                data.getFirstRowContainsHeader());
         } else {
             throw new RuntimeException("Configuration type not supported"); //$NON-NLS-1$
         }

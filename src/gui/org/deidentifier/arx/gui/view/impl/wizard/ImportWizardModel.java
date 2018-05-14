@@ -58,7 +58,9 @@ public class ImportWizardModel {
         JDBC,
         
         /**  Constant */
-        EXCEL
+        EXCEL,
+
+        SAS
     }
 
     /** Maximum number of lines to be loaded for preview purposes. */

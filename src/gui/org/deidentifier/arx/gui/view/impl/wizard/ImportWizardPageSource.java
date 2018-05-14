@@ -59,6 +59,8 @@ public class ImportWizardPageSource extends WizardPage {
     /**  TODO */
     private Button btnJdbc;
 
+    private Button btnSas;
+
     /** Reference to the wizard containing this page. */
     private ImportWizard wizardImport;
 
@@ -118,6 +120,18 @@ public class ImportWizardPageSource extends WizardPage {
         /* Add button for JDBC */
         btnJdbc = new Button(container, SWT.RADIO);
         btnJdbc.setText(Resources.getMessage("ImportWizardPageSource.5")); //$NON-NLS-1$
+        btnJdbc.addSelectionListener(new SelectionAdapter() {
+
+            @Override
+            public void widgetSelected(SelectionEvent arg0) {
+                wizardImport.getData().setSourceType(SourceType.JDBC);
+                setPageComplete(true);
+            }
+        });
+
+        /* Add button for SAS */
+        btnSas = new Button(container, SWT.RADIO);
+        btnSas.setText(Resources.getMessage("ImportWizardPageSource.6"));
         btnJdbc.addSelectionListener(new SelectionAdapter() {
 
             @Override
