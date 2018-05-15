@@ -132,11 +132,11 @@ public class ImportWizardPageSource extends WizardPage {
         /* Add button for SAS */
         btnSas = new Button(container, SWT.RADIO);
         btnSas.setText(Resources.getMessage("ImportWizardPageSource.6"));
-        btnJdbc.addSelectionListener(new SelectionAdapter() {
+        btnSas.addSelectionListener(new SelectionAdapter() {
 
             @Override
             public void widgetSelected(SelectionEvent arg0) {
-                wizardImport.getData().setSourceType(SourceType.JDBC);
+                wizardImport.getData().setSourceType(SourceType.SAS);
                 setPageComplete(true);
             }
         });
