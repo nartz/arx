@@ -8,7 +8,6 @@
       <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/gui" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/example" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/doc" />
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
@@ -28,5 +27,6 @@
         <jarDirectory url="file://$MODULE_DIR$/lib" recursive="true" type="SOURCES" />
       </library>
     </orderEntry>
+    <orderEntry type="library" exported="" name="lib" level="project" />
   </component>
 </module>
