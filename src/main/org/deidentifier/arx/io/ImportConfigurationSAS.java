@@ -20,24 +20,12 @@ package org.deidentifier.arx.io;
 import java.nio.charset.Charset;
 
 /**
- * Configuration describing a CSV file.
+ * Configuration describing a SAS file.
  *
  * @author Karol Babioch
  * @author Fabian Prasser
  */
 public class ImportConfigurationSAS extends ImportConfigurationFile implements IImportConfigurationWithHeader { // NO_UCD
-
-    /** Character that separates the columns from each other. */
-    private final char   delimiter;
-
-    /** Character that delimits strings. */
-    private final char   quote;
-
-    /** Characters that delimits lines. */
-    private final char[] linebreak;
-
-    /** Character that escapes. */
-    private final char   escape;
 
     /**
      * Indicates whether first row contains header (names of columns).
@@ -58,86 +46,9 @@ public class ImportConfigurationSAS extends ImportConfigurationFile implements I
     public ImportConfigurationSAS(String fileLocation,
                                   Charset charset,
                                   boolean containsHeader) {
-        this(fileLocation, charset, CSVSyntax.DEFAULT_DELIMITER, CSVSyntax.DEFAULT_QUOTE, CSVSyntax.DEFAULT_ESCAPE, containsHeader);
-    }
-
-    /**
-     * Creates a new instance of this object.
-     *
-     * @param fileLocation {@link #setFileLocation(String)}
-     * @param charset {@link #charset}
-     * @param delimiter {@link #separator}
-     * @param containsHeader {@link #containsHeader}
-     */
-    public ImportConfigurationSAS(String fileLocation,
-                                  Charset charset,
-                                  char delimiter,
-                                  boolean containsHeader) {
-        this(fileLocation, charset, delimiter, CSVSyntax.DEFAULT_QUOTE, CSVSyntax.DEFAULT_ESCAPE, containsHeader);
-    }
-
-    /**
-     * Creates a new instance of this object.
-     *
-     * @param fileLocation {@link #setFileLocation(String)}
-     * @param charset {@link #charset}
-     * @param delimiter {@link #delimiter}
-     * @param quote {@link #quote}
-     * @param containsHeader {@link #containsHeader}
-     */
-    public ImportConfigurationSAS(String fileLocation,
-                                  Charset charset,
-                                  char delimiter,
-                                  char quote,
-                                  boolean containsHeader) {
-        this(fileLocation, charset, delimiter, quote, CSVSyntax.DEFAULT_ESCAPE, containsHeader);
-    }
-
-    /**
-     * Creates a new instance of this object.
-     *
-     * @param fileLocation {@link #setFileLocation(String)}
-     * @param charset {@link #charset}
-     * @param delimiter {@link #delimiter}
-     * @param quote {@link #quote}
-     * @param escape {@link #escape}
-     * @param containsHeader {@link #containsHeader}
-     */
-    public ImportConfigurationSAS(String fileLocation,
-                                  Charset charset,
-                                  char delimiter,
-                                  char quote,
-                                  char escape,
-                                  boolean containsHeader) {
-        this(fileLocation, charset, delimiter, quote, escape, CSVSyntax.DEFAULT_LINEBREAK, containsHeader);
-    }
-
-    /**
-     * Creates a new instance of this object.
-     *
-     * @param fileLocation the file location
-     * @param charset the charset
-     * @param delimiter the delimiter
-     * @param quote the quote
-     * @param escape the escape
-     * @param linebreak the linebreak
-     * @param containsHeader the contains header
-     */
-    public ImportConfigurationSAS(String fileLocation,
-                                  Charset charset,
-                                  char delimiter,
-                                  char quote,
-                                  char escape,
-                                  char[] linebreak,
-                                  boolean containsHeader) {
-
         setFileLocation(fileLocation);
-        this.quote = quote;
-        this.delimiter = delimiter;
-        this.escape = escape;
-        this.containsHeader = containsHeader;
-        this.linebreak = linebreak;
         this.charset = charset;
+        this.containsHeader = containsHeader;
     }
 
     /**
@@ -198,42 +109,6 @@ public class ImportConfigurationSAS extends ImportConfigurationFile implements I
     @Override
     public boolean getContainsHeader() {
         return containsHeader;
-    }
-
-    /**
-     * Gets the delimiter.
-     *
-     * @return {@link #delimiter}
-     */
-    public char getDelimiter() {
-        return delimiter;
-    }
-
-    /**
-     * Gets the escape.
-     *
-     * @return {@link #quote}
-     */
-    public char getEscape() {
-        return escape;
-    }
-
-    /**
-     * Gets the linebreak.
-     *
-     * @return {@link #linebreak}
-     */
-    public char[] getLinebreak() {
-        return linebreak;
-    }
-
-    /**
-     * Gets the quote.
-     *
-     * @return {@link #quote}
-     */
-    public char getQuote() {
-        return quote;
     }
 
     /**

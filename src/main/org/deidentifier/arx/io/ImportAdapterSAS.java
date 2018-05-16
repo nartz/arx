@@ -60,14 +60,8 @@ public class ImportAdapterSAS extends ImportAdapter {
     private CountingInputStream    cin;
 
     /**
-     * @see {@link CSVDataInput}
-     */
-    private CSVDataInput           in;
-
-    /**
-     * Actual iterator used to go through data within CSV file.
+     * Actual iterator used to go through data within SAS file.
      *
-     * @see {@link CSVDataInput#iterator()}
      */
     private Iterator<String[]>     it;
 
@@ -123,6 +117,7 @@ public class ImportAdapterSAS extends ImportAdapter {
 
         // Create header
         header = createHeader();
+        inputStream.close();
     }
 
     private Iterator<String[]> getIteratorForSasFile(SasFileReader sasFileReader) {

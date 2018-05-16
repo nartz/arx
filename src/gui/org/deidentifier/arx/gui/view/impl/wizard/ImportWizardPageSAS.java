@@ -293,16 +293,16 @@ public class ImportWizardPageSAS extends WizardPage {
             @Override
             public void widgetSelected(SelectionEvent arg0) {
                 /* Make widgets visible */
-                lblDelimiter.setVisible(true);
-                comboDelimiter.setVisible(true);
-                lblQuote.setVisible(true);
-                comboQuote.setVisible(true);
-                lblLinebreak.setVisible(true);
-                comboLinebreak.setVisible(true);
-                lblEscape.setVisible(true);
+                //lblDelimiter.setVisible(true);
+                //comboDelimiter.setVisible(true);
+                //lblQuote.setVisible(true);
+                //comboQuote.setVisible(true);
+                //lblLinebreak.setVisible(true);
+                //comboLinebreak.setVisible(true);
+                //lblEscape.setVisible(true);
                 lblCharset.setVisible(true);
                 comboCharset.setVisible(true);
-                comboEscape.setVisible(true);
+                //comboEscape.setVisible(true);
                 btnContainsHeader.setVisible(true);
                 customDelimiter = false;
                 customLinebreak = false;
@@ -344,13 +344,13 @@ public class ImportWizardPageSAS extends WizardPage {
             }
         });
 
-        /* Delimiter label */
+        /* Charset label */
         lblCharset = new Label(container, SWT.NONE);
         lblCharset.setVisible(false);
         lblCharset.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
         lblCharset.setText(Resources.getMessage("ImportWizardPageCSV.20")); //$NON-NLS-1$
 
-        /* Delimiter combobox */
+        /* Charset combobox */
         comboCharset = new Combo(container, SWT.READ_ONLY);
         comboCharset.setVisible(false);
 
@@ -379,137 +379,6 @@ public class ImportWizardPageSAS extends WizardPage {
         });
 
         /* Place holder */
-        new Label(container, SWT.NONE);
-
-        /* Delimiter label */
-        lblDelimiter = new Label(container, SWT.NONE);
-        lblDelimiter.setVisible(false);
-        lblDelimiter.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        lblDelimiter.setText(Resources.getMessage("ImportWizardPageCSV.10")); //$NON-NLS-1$
-
-        /* Delimiter combobox */
-        comboDelimiter = new Combo(container, SWT.READ_ONLY);
-        comboDelimiter.setVisible(false);
-
-        /* Add labels */
-        for (final String s : labels) {
-            comboDelimiter.add(s);
-        }
-
-        comboDelimiter.select(selectedDelimiter);
-        comboDelimiter.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        comboDelimiter.addSelectionListener(new SelectionAdapter() {
-
-            /**
-             * Set selection index and customDelimiter and (re-)evaluates page
-             */
-            @Override
-            public void widgetSelected(final SelectionEvent arg0) {
-                selectedDelimiter = comboDelimiter.getSelectionIndex();
-                customDelimiter = true;
-                evaluatePage();
-            }
-        });
-
-        /* Place holder */
-        new Label(container, SWT.NONE);
-
-        /* Quote label */
-        lblQuote = new Label(container, SWT.NONE);
-        lblQuote.setVisible(false);
-        lblQuote.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        lblQuote.setText(Resources.getMessage("ImportWizardPageCSV.11")); //$NON-NLS-1$
-
-        /* Quote combobox */
-        comboQuote = new Combo(container, SWT.READ_ONLY);
-        comboQuote.setVisible(false);
-
-        /* Add labels */
-        for (final char c : quotes) {
-            comboQuote.add(String.valueOf(c));
-        }
-
-        comboQuote.select(selectedQuote);
-        comboQuote.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        comboQuote.addSelectionListener(new SelectionAdapter() {
-
-            /**
-             * Set selection index and custom quote and (re-)evaluates page
-             */
-            @Override
-            public void widgetSelected(final SelectionEvent arg0) {
-                selectedQuote = comboQuote.getSelectionIndex();
-                evaluatePage();
-            }
-        });
-
-        /* Place holder */
-        new Label(container, SWT.NONE);
-
-        /* Escape label */
-        lblEscape = new Label(container, SWT.NONE);
-        lblEscape.setVisible(false);
-        lblEscape.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        lblEscape.setText(Resources.getMessage("ImportWizardPageCSV.12")); //$NON-NLS-1$
-
-        /* Escape combobox */
-        comboEscape = new Combo(container, SWT.READ_ONLY);
-        comboEscape.setVisible(false);
-
-        /* Add labels */
-        for (final char c : escapes) {
-            comboEscape.add(String.valueOf(c));
-        }
-
-        comboEscape.select(selectedEscape);
-        comboEscape.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        comboEscape.addSelectionListener(new SelectionAdapter() {
-
-            /**
-             * Set selection index and custom escape and (re-)evaluates page
-             */
-            @Override
-            public void widgetSelected(final SelectionEvent arg0) {
-                selectedEscape = comboEscape.getSelectionIndex();
-                evaluatePage();
-            }
-        });
-
-        /* Place holder */
-        new Label(container, SWT.NONE);
-
-        /* Line break label */
-        lblLinebreak = new Label(container, SWT.NONE);
-        lblLinebreak.setVisible(false);
-        lblLinebreak.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        lblLinebreak.setText(Resources.getMessage("ImportWizardPageCSV.13")); //$NON-NLS-1$
-
-        /* Line break combobox */
-        comboLinebreak = new Combo(container, SWT.READ_ONLY);
-        comboLinebreak.setVisible(false);
-
-        /* Add labels */
-        for (final String c : CSVSyntax.getAvailableLinebreaks()) {
-            comboLinebreak.add(String.valueOf(c));
-        }
-
-        comboLinebreak.select(selectedLinebreak);
-        comboLinebreak.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        comboLinebreak.addSelectionListener(new SelectionAdapter() {
-
-            /**
-             * Set selection index and custom line break and (re-)evaluates page
-             */
-            @Override
-            public void widgetSelected(final SelectionEvent arg0) {
-                selectedLinebreak = comboLinebreak.getSelectionIndex();
-                customLinebreak = true;
-                evaluatePage();
-            }
-        });
-
-        /* Place holders */
-        new Label(container, SWT.NONE);
         new Label(container, SWT.NONE);
 
         /* Contains header button */
@@ -552,105 +421,6 @@ public class ImportWizardPageSAS extends WizardPage {
         setPageComplete(false);
     }
 
-    /**
-     * Tries to detect the separator used within this file
-     *
-     * This goes through up to {@link ImportWizardModel#PREVIEW_MAX_LINES} lines
-     * and tries to detect the used separator by counting how often each of
-     * the available {@link #delimiters} is used.
-     *
-     * @throws IOException In case file couldn't be accessed successfully
-     */
-    private void detectDelimiter() throws IOException {
-        Charset charset = getCharset();
-
-        final BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(comboLocation.getText()), charset));
-        final IntIntOpenHashMap map = new IntIntOpenHashMap();
-        final CharIntOpenHashMap delimitors = new CharIntOpenHashMap();
-        for (int i=0; i<this.delimiters.length; i++) {
-            delimitors.put(this.delimiters[i], i);
-        }
-        int countLines = 0;
-        int countChars = 0;
-
-        /* Iterate over data */
-        String line = r.readLine();
-        outer: while ((countLines < ImportWizardModel.PREVIEW_MAX_LINES) && (line != null)) {
-
-            /* Iterate over line character by character */
-            final char[] a = line.toCharArray();
-            for (final char c : a) {
-                if (delimitors.containsKey(c)) {
-                    map.putOrAdd(delimitors.get(c), 0, 1);
-                }
-                countChars++;
-                if (countChars > ImportWizardModel.DETECT_MAX_CHARS) {
-                    break outer;
-                }
-            }
-            line = r.readLine();
-            countLines++;
-        }
-        r.close();
-
-        if (map.isEmpty()) {
-            selectedDelimiter = 0;
-            return;
-        }
-
-        /* Check which separator was used the most */
-        int max = Integer.MIN_VALUE;
-        final int [] keys = map.keys;
-        final int [] values = map.values;
-        final boolean [] allocated = map.allocated;
-        for (int i = 0; i < allocated.length; i++) {
-            if (allocated[i] && values[i] > max) {
-                max = values[i];
-                selectedDelimiter = keys[i];
-            }
-        }
-    }
-
-
-    /**
-     * Tries to detect the line break.
-     *
-     * @throws IOException Signals that an I/O exception has occurred.
-     */
-    private void detectLinebreak() throws IOException {
-        BufferedReader r = null;
-        final char[] buffer = new char[ImportWizardModel.DETECT_MAX_CHARS];
-        int read = 0;
-
-        Charset charset = getCharset();
-
-        try {
-            r = new BufferedReader(new InputStreamReader(new FileInputStream(comboLocation.getText()), charset));
-            read = r.read(buffer);
-        } finally {
-            if (r != null) {
-                r.close();
-            }
-        }
-
-        if (read > 0) {
-            for (int i = 0; i < read; i++) {
-                char current = buffer[i];
-                if (current == '\r') {
-                    if (i < buffer.length - 1 && buffer[i + 1] == '\n') { // Windows
-                        selectedLinebreak = 1;
-                    } else { // Mac OS
-                        selectedLinebreak = 2;
-                    }
-                    return;
-                }
-                if (current == '\n') { // Unix
-                    selectedLinebreak = 0;
-                    return;
-                }
-            }
-        }
-    }
 
     /**
      * Evaluates the page
@@ -673,14 +443,6 @@ public class ImportWizardPageSAS extends WizardPage {
         }
 
         try {
-            if (!customLinebreak) {
-                detectLinebreak();
-                comboLinebreak.select(selectedLinebreak);
-            }
-            if (!customDelimiter) {
-                detectDelimiter();
-                comboDelimiter.select(selectedDelimiter);
-            }
             readPreview();
 
         } catch (IOException | IllegalArgumentException e) {
@@ -749,32 +511,17 @@ public class ImportWizardPageSAS extends WizardPage {
 
         /* Parameters from the user interface */
         final String location = comboLocation.getText();
-        final char delimiter = delimiters[selectedDelimiter];
-        final char[] linebreak = CSVSyntax.getLinebreakForLabel(CSVSyntax.getAvailableLinebreaks()[selectedLinebreak]);
-        final char quote = quotes[selectedQuote];
-        final char escape = escapes[selectedEscape];
         final boolean containsHeader = btnContainsHeader.getSelection();
         final Charset charset = Charsets.getCharsetForName(Charsets.getNamesOfAvailableCharsets()[selectedCharset]);
 
         /* Variables needed for processing */
-
-        //final CSVDataInput in = new CSVDataInput(location, charset, delimiter, quote, escape, linebreak);
-        //final Iterator<String[]> it = in.iterator();
         InputStream inputStream = new FileInputStream(location);
         SasFileReader sasFileReader = new SasFileReaderImpl(inputStream);
         final Iterator<String[]> it = getIteratorForSasFile(sasFileReader);
 
-//        Writer writer = new StringWriter();
-//        CSVMetadataWriter csvMetadataWriter = new CSVMetadataWriterImpl(writer);
-//        csvMetadataWriter.writeMetadata(sasFileReader.getColumns());
-//
-//        writer = new StringWriter();
-//        CSVDataWriter csvDataWriter = new CSVDataWriterImpl(writer);
-//        csvDataWriter.writeColumnNames(sasFileReader.getColumns());
-
         final String[] firstLine;
         wizardColumns = new ArrayList<ImportWizardModelColumn>();
-        ImportConfigurationSAS config = new ImportConfigurationSAS(location, charset, delimiter, quote, escape, linebreak, containsHeader);
+        ImportConfigurationSAS config = new ImportConfigurationSAS(location, charset, containsHeader);
 
         /* Check whether there is at least one line in file and retrieve it */
         if (it.hasNext()) {
