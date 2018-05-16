@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.epam.parso.Column;
 import com.epam.parso.SasFileReader;
 import com.epam.parso.impl.SasFileReaderImpl;
 import org.apache.commons.io.input.CountingInputStream;
@@ -116,7 +117,7 @@ public class ImportAdapterSAS extends ImportAdapter {
         }
 
         // Create header
-        header = createHeader();
+        header = createHeader(sasFileReader.getColumns());
         inputStream.close();
     }
 
@@ -234,7 +235,7 @@ public class ImportAdapterSAS extends ImportAdapter {
      *
      * @return
      */
-    private String[] createHeader() {
+    private String[] createHeader(List<Column> sasColumns) {
 
         /* Preparation work */
         if (config.getContainsHeader()) this.config.prepare(row);
@@ -249,17 +250,9 @@ public class ImportAdapterSAS extends ImportAdapter {
         for (int i = 0, len = columns.size(); i < len; i++) {
 
             ImportColumn column = columns.get(i);
+            Column sasColumn = sasColumns.get(i);
 
-            /* Check whether there is a header, which is not empty */
-            if (config.getContainsHeader() &&
-                !row[((ImportColumnCSV) column).getIndex()].equals("")) {
-
-                /* Assign name of CSV file itself */
-                header[i] = row[((ImportColumnCSV) column).getIndex()];
-            } else {
-                /* Nothing defined in header (or empty), build name manually */
-                header[i] = "Column #" + ((ImportColumnCSV) column).getIndex();
-            }
+            header[i] = sasColumn.getName();
 
             if (column.getAliasName() != null) {
                 /* Name has been assigned explicitly */
