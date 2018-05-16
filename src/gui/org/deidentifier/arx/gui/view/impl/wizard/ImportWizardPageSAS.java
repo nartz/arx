@@ -17,24 +17,27 @@
 
 package org.deidentifier.arx.gui.view.impl.wizard;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
+import java.util.List;
+
+import com.epam.parso.SasFileReader;
+import com.epam.parso.impl.SasFileReaderImpl;
 import org.deidentifier.arx.DataType;
-import org.deidentifier.arx.gui.Controller;
+import org.deidentifier.arx.gui.resources.Charsets;
 import org.deidentifier.arx.gui.resources.Resources;
 import org.deidentifier.arx.gui.view.SWTUtil;
+import org.deidentifier.arx.io.CSVSyntax;
 import org.deidentifier.arx.io.ImportAdapter;
 import org.deidentifier.arx.io.ImportColumn;
-import org.deidentifier.arx.io.ImportColumnExcel;
-import org.deidentifier.arx.io.ImportConfigurationExcel;
+import org.deidentifier.arx.io.ImportColumnCSV;
+import org.deidentifier.arx.io.ImportConfigurationCSV;
 import org.deidentifier.arx.io.ImportConfigurationSAS;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
@@ -55,41 +58,29 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 
+import com.carrotsearch.hppc.CharIntOpenHashMap;
+import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.univocity.parsers.common.TextParsingException;
+
 
 /**
- * Excel page
+ * SAS page
  *
- * This page offers means to import data from an Excel file. It contains
- * mechanisms to select such a file, and offers the user the ability to choose
- * the sheet to import from and whether or not the first row contains a header
- * describing each column. A live preview makes sure the user will immediately
- * see whether or not his choices make any sense.
+ * This page offers a means to import data from a SAS database. This is modeled off of
+ * {@link ImportWizardPageCSV}
  *
- * All of the data gathered on this page is stored within {@link ImportWizardModel}.
- *
- * This includes:
- *
- * <ul>
- *  <li>{@link ImportWizardModel#setWizardColumns(List)}</li>
- *  <li>{@link ImportWizardModel#setFirstRowContainsHeader(boolean)</li>
- *  <li>{@link ImportWizardModel#setFileLocation(String)}</li>
- *  <li>{@link ImportWizardModel#setExcelSheetIndex(int)}</li>
- * </ul>
- *
- * @author Karol Babioch
- * @author Fabian Prasser
  */
 public class ImportWizardPageSAS extends WizardPage {
 
     /**
-     * Label provider for Excel columns
+     * Label provider for CSV columns
      *
      * A new instance of this object will be initiated for each column of
      * {@link tableViewerPreview}. This class holds the index of the
      * appropriate column {@link #index}, making sure they will return the
      * correct value for each column.
      */
-    class ExcelColumnLabelProvider extends ColumnLabelProvider {
+    class SASColumnLabelProvider extends ColumnLabelProvider {
 
         /** Index of the column this instance is representing. */
         private int index;
@@ -100,15 +91,15 @@ public class ImportWizardPageSAS extends WizardPage {
          *
          * @param index Index the instance should be created for
          */
-        public ExcelColumnLabelProvider(int index) {
+        public SASColumnLabelProvider(int index) {
             this.index = index;
         }
 
         /**
          * Returns the string value for the given column.
          *
-         * @param element
-         * @return
+         * @param element the element
+         * @return the text
          */
         @Override
         public String getText(Object element) {
@@ -117,44 +108,145 @@ public class ImportWizardPageSAS extends WizardPage {
     }
 
     /** Reference to the wizard containing this page. */
-    private ImportWizard wizardImport;
+    private ImportWizard                       wizardImport;
 
-    /** Columns detected by this page and passed on to {@link ImportWizardModel}. */
+    /**
+     * Columns detected by this page and passed on to {@link ImportWizardModel}.
+     */
     private ArrayList<ImportWizardModelColumn> wizardColumns;
     /* Widgets */
-    /**  TODO */
-    private Label lblLocation;
+    /** Label. */
+    private Label                              lblLocation;
 
-    /**  TODO */
-    private Combo comboLocation;
+    /** Combo. */
+    private Combo                              comboLocation;
 
-    /**  TODO */
-    private Button btnChoose;
+    /** Button. */
+    private Button                             btnChoose;
 
-    /**  TODO */
-    private Button btnContainsHeader;
+    /** Button. */
+    private Button                             btnContainsHeader;
 
-    /**  TODO */
-    private Combo comboSheet;
+    /** Combo. */
+    private Combo                              comboDelimiter;
 
-    /**  TODO */
-    private Label lblSheet;
+    /** Combo. */
+    private Combo                              comboLinebreak;
 
-    /**  TODO */
-    private Table tablePreview;
+    /** Combo. */
+    private Combo                              comboQuote;
 
-    /**  TODO */
-    private TableViewer tableViewerPreview;
+    /** Combo. */
+    private Combo                              comboEscape;
 
-    /** Preview data. */
-    ArrayList<String[]> previewData = new ArrayList<String[]>();
+    /** Combo. */
+    private Combo                              comboCharset;
+
+    /** Label. */
+    private Label                              lblDelimiter;
+
+    /** Label. */
+    private Label                              lblQuote;
+
+    /** Label. */
+    private Label                              lblLinebreak;
+
+    /** Label. */
+    private Label                              lblEscape;
+
+    /** Label. */
+    private Label                              lblCharset;
+
+    /** Table. */
+    private Table                              tablePreview;
+
+    /** TableViewer. */
+    private TableViewer                        tableViewerPreview;
+
+    /**
+     * Currently selected separator (index).
+     *
+     * @see {@link #delimiters}
+     */
+    private int                                selectedDelimiter = 0;
+
+    /**
+     * Currently selected delimiter (index).
+     *
+     * @see {@link #quotes}
+     */
+    private int                                selectedQuote = 0;
+
+    /**
+     * Currently selected escape (index).
+     *
+     * @see {@link #quotes}
+     */
+    private int                                selectedEscape    = 0;
+
+    /**
+     * Currently selected line break (index).
+     */
+    private int                                selectedLinebreak    = 0;
+
+    /**
+     * Currently selected charset (index).
+     */
+    private int                                selectedCharset    = 0;
 
 
-    /** Workbook Either HSSFWorkbook or XSSFWorkbook, depending upon file type. */
-    private Workbook workbook;
+    /**
+     * Supported escape characters.
+     *
+     * @see {@link #labels}
+     * @note This are the escape characters.
+     */
+    private final char[]                       escapes           = { '\"', '\\' };
 
-    /** Input stream. */
-    private InputStream stream;
+    /**
+     * Supported delimiters.
+     *
+     * @see {@link #labels}
+     * @note This are the delimiters.
+     */
+    private final char[]                       quotes        = { '\"', '\'' };
+
+    /**
+     * Supported separators.
+     *
+     * @see {@link #labels}
+     * @note This are the separators itself. The appropriate combo box will
+     *       display the {@link #labels} instead.
+     */
+    private final char[]                       delimiters        = { ';', ',', '|', '\t' };
+
+    /**
+     * Labels for separators defined in {@link #delimiters}.
+     *
+     * @see {@link #delimiters}
+     */
+    private final String[]                     labels            = { ";", ",", "|", "Tab" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+
+    /**
+     * Indicates whether separator was detected automatically or by the user
+     *
+     * The separator will usually be detected automatically {@link #detectDelimiter()}. In case the user selected another separator
+     * by hand, this flag will be set to true, making sure the rest of the logic
+     * knows about it.
+     */
+    private boolean                            customDelimiter;
+
+    /**
+     * Indicates whether line break was detected automatically or by the user
+     *
+     * The line break will usually be detected automatically {@link #detectLinebreak()}. In case the user selected another line break
+     * by hand, this flag will be set to true, making sure the rest of the logic
+     * knows about it.
+     */
+    private boolean                            customLinebreak;
+
+    /** Data for preview. */
+    private final ArrayList<String[]>          previewData       = new ArrayList<String[]>();
 
     /**
      * Creates a new instance of this page and sets its title and description.
@@ -163,10 +255,10 @@ public class ImportWizardPageSAS extends WizardPage {
      */
     public ImportWizardPageSAS(ImportWizard wizardImport)
     {
-        //"WizardImportSASPage"
-        super("WizardImportSASPage");
-        setTitle("SAS");
-        setDescription(Resources.getMessage("ImportWizardPageExcel.2")); //$NON-NLS-1$
+
+        super("WizardImportSasPage"); //$NON-NLS-1$
+        setTitle("SAS"); //$NON-NLS-1$
+        setDescription(Resources.getMessage("ImportWizardPageCSV.6")); //$NON-NLS-1$
         this.wizardImport = wizardImport;
 
     }
@@ -176,7 +268,7 @@ public class ImportWizardPageSAS extends WizardPage {
      *
      * This adds all the controls to the page along with their listeners.
      *
-     * @param parent
+     * @param parent the parent
      * @note {@link #tablePreview} is not visible until a file is loaded.
      */
     public void createControl(Composite parent)
@@ -189,54 +281,47 @@ public class ImportWizardPageSAS extends WizardPage {
         /* Location label */
         lblLocation = new Label(container, SWT.NONE);
         lblLocation.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        lblLocation.setText(Resources.getMessage("ImportWizardPageExcel.3")); //$NON-NLS-1$
+        lblLocation.setText(Resources.getMessage("ImportWizardPageCSV.7")); //$NON-NLS-1$
 
         /* Combo box for selection of file */
         comboLocation = new Combo(container, SWT.READ_ONLY);
         comboLocation.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
         comboLocation.addSelectionListener(new SelectionAdapter() {
-
             /**
-             * Reads the sheets and selects active one
+             * Resets {@link customSeparator} and evaluates page
              */
             @Override
             public void widgetSelected(SelectionEvent arg0) {
-
-                /* Try to read in sheets */
-                try {
-                    readSheets();
-                } catch (IOException e) {
-                    setErrorMessage(Resources.getMessage("ImportWizardPageSAS.4")); //$NON-NLS-1$
-                    resetPage();
-                    return;
-                }
-
                 /* Make widgets visible */
-                comboSheet.setVisible(true);
-                lblSheet.setVisible(true);
+                lblDelimiter.setVisible(true);
+                comboDelimiter.setVisible(true);
+                lblQuote.setVisible(true);
+                comboQuote.setVisible(true);
+                lblLinebreak.setVisible(true);
+                comboLinebreak.setVisible(true);
+                lblEscape.setVisible(true);
+                lblCharset.setVisible(true);
+                comboCharset.setVisible(true);
+                comboEscape.setVisible(true);
                 btnContainsHeader.setVisible(true);
-
-                /* Select active sheet and notify comboSheet about change */
-                comboSheet.select(workbook.getActiveSheetIndex());
-                comboSheet.notifyListeners(SWT.Selection, null);
-
+                customDelimiter = false;
+                customLinebreak = false;
+                evaluatePage();
             }
-
         });
 
         /* Button to open file selection dialog */
         btnChoose = new Button(container, SWT.NONE);
-        btnChoose.setText(Resources.getMessage("ImportWizardPageExcel.5")); //$NON-NLS-1$
+        btnChoose.setText(Resources.getMessage("ImportWizardPageCSV.8")); //$NON-NLS-1$
         btnChoose.addSelectionListener(new SelectionAdapter() {
 
             /**
-             * Opens a file selection dialog for Excel files
+             * Opens a file selection dialog for CSV files
              *
-             * Both XLS and XLSX files can be selected. If a valid file was
-             * selected, it is added to {@link #comboLocation} when it wasn't
-             * already there. In either case it gets preselected.
-             *
-             * @see {@link Controller#actionShowOpenFileDialog(String)}
+             * If a valid CSV file was selected, it is added to
+             * {@link #comboLocation} when it wasn't already there. It is then
+             * preselected within {@link #comboLocation} and the page is
+             * evaluated {@see #evaluatePage}.
              */
             @Override
             public void widgetSelected(SelectionEvent arg0) {
@@ -259,23 +344,166 @@ public class ImportWizardPageSAS extends WizardPage {
             }
         });
 
-        /* Sheet label */
-        lblSheet = new Label(container, SWT.NONE);
-        lblSheet.setVisible(false);
-        lblSheet.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        lblSheet.setText(Resources.getMessage("ImportWizardPageSAS.37")); //$NON-NLS-1$
+        /* Delimiter label */
+        lblCharset = new Label(container, SWT.NONE);
+        lblCharset.setVisible(false);
+        lblCharset.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+        lblCharset.setText(Resources.getMessage("ImportWizardPageCSV.20")); //$NON-NLS-1$
 
-        /* Sheet combobox */
-        comboSheet = new Combo(container, SWT.READ_ONLY);
-        comboSheet.setVisible(false);
-        comboSheet.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-        comboSheet.addSelectionListener(new SelectionAdapter() {
+        /* Delimiter combobox */
+        comboCharset = new Combo(container, SWT.READ_ONLY);
+        comboCharset.setVisible(false);
+
+        /* Add labels */
+        int index = 0;
+        for (final String s : Charsets.getNamesOfAvailableCharsets()) {
+            comboCharset.add(s);
+            if (s.equals(Charsets.getNameOfDefaultCharset())) {
+                selectedCharset = index;
+            }
+            index++;
+        }
+
+        comboCharset.select(selectedCharset);
+        comboCharset.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        comboCharset.addSelectionListener(new SelectionAdapter() {
 
             /**
-             * (Re-)Evaluate page
+             * Set selection index and customDelimiter and (re-)evaluates page
              */
             @Override
             public void widgetSelected(final SelectionEvent arg0) {
+                selectedCharset = comboCharset.getSelectionIndex();
+                evaluatePage();
+            }
+        });
+
+        /* Place holder */
+        new Label(container, SWT.NONE);
+
+        /* Delimiter label */
+        lblDelimiter = new Label(container, SWT.NONE);
+        lblDelimiter.setVisible(false);
+        lblDelimiter.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+        lblDelimiter.setText(Resources.getMessage("ImportWizardPageCSV.10")); //$NON-NLS-1$
+
+        /* Delimiter combobox */
+        comboDelimiter = new Combo(container, SWT.READ_ONLY);
+        comboDelimiter.setVisible(false);
+
+        /* Add labels */
+        for (final String s : labels) {
+            comboDelimiter.add(s);
+        }
+
+        comboDelimiter.select(selectedDelimiter);
+        comboDelimiter.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        comboDelimiter.addSelectionListener(new SelectionAdapter() {
+
+            /**
+             * Set selection index and customDelimiter and (re-)evaluates page
+             */
+            @Override
+            public void widgetSelected(final SelectionEvent arg0) {
+                selectedDelimiter = comboDelimiter.getSelectionIndex();
+                customDelimiter = true;
+                evaluatePage();
+            }
+        });
+
+        /* Place holder */
+        new Label(container, SWT.NONE);
+
+        /* Quote label */
+        lblQuote = new Label(container, SWT.NONE);
+        lblQuote.setVisible(false);
+        lblQuote.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+        lblQuote.setText(Resources.getMessage("ImportWizardPageCSV.11")); //$NON-NLS-1$
+
+        /* Quote combobox */
+        comboQuote = new Combo(container, SWT.READ_ONLY);
+        comboQuote.setVisible(false);
+
+        /* Add labels */
+        for (final char c : quotes) {
+            comboQuote.add(String.valueOf(c));
+        }
+
+        comboQuote.select(selectedQuote);
+        comboQuote.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        comboQuote.addSelectionListener(new SelectionAdapter() {
+
+            /**
+             * Set selection index and custom quote and (re-)evaluates page
+             */
+            @Override
+            public void widgetSelected(final SelectionEvent arg0) {
+                selectedQuote = comboQuote.getSelectionIndex();
+                evaluatePage();
+            }
+        });
+
+        /* Place holder */
+        new Label(container, SWT.NONE);
+
+        /* Escape label */
+        lblEscape = new Label(container, SWT.NONE);
+        lblEscape.setVisible(false);
+        lblEscape.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+        lblEscape.setText(Resources.getMessage("ImportWizardPageCSV.12")); //$NON-NLS-1$
+
+        /* Escape combobox */
+        comboEscape = new Combo(container, SWT.READ_ONLY);
+        comboEscape.setVisible(false);
+
+        /* Add labels */
+        for (final char c : escapes) {
+            comboEscape.add(String.valueOf(c));
+        }
+
+        comboEscape.select(selectedEscape);
+        comboEscape.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        comboEscape.addSelectionListener(new SelectionAdapter() {
+
+            /**
+             * Set selection index and custom escape and (re-)evaluates page
+             */
+            @Override
+            public void widgetSelected(final SelectionEvent arg0) {
+                selectedEscape = comboEscape.getSelectionIndex();
+                evaluatePage();
+            }
+        });
+
+        /* Place holder */
+        new Label(container, SWT.NONE);
+
+        /* Line break label */
+        lblLinebreak = new Label(container, SWT.NONE);
+        lblLinebreak.setVisible(false);
+        lblLinebreak.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+        lblLinebreak.setText(Resources.getMessage("ImportWizardPageCSV.13")); //$NON-NLS-1$
+
+        /* Line break combobox */
+        comboLinebreak = new Combo(container, SWT.READ_ONLY);
+        comboLinebreak.setVisible(false);
+
+        /* Add labels */
+        for (final String c : CSVSyntax.getAvailableLinebreaks()) {
+            comboLinebreak.add(String.valueOf(c));
+        }
+
+        comboLinebreak.select(selectedLinebreak);
+        comboLinebreak.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+        comboLinebreak.addSelectionListener(new SelectionAdapter() {
+
+            /**
+             * Set selection index and custom line break and (re-)evaluates page
+             */
+            @Override
+            public void widgetSelected(final SelectionEvent arg0) {
+                selectedLinebreak = comboLinebreak.getSelectionIndex();
+                customLinebreak = true;
                 evaluatePage();
             }
         });
@@ -287,7 +515,7 @@ public class ImportWizardPageSAS extends WizardPage {
         /* Contains header button */
         btnContainsHeader = new Button(container, SWT.CHECK);
         btnContainsHeader.setVisible(false);
-        btnContainsHeader.setText(Resources.getMessage("ImportWizardPageSAS.14")); //$NON-NLS-1$
+        btnContainsHeader.setText(Resources.getMessage("ImportWizardPageCSV.14")); //$NON-NLS-1$
         btnContainsHeader.setSelection(true);
         btnContainsHeader.addSelectionListener(new SelectionAdapter() {
 
@@ -300,8 +528,10 @@ public class ImportWizardPageSAS extends WizardPage {
             }
         });
 
-        /* Place holders */
+        /* Place holder */
         new Label(container, SWT.NONE);
+
+        /* Place holders */
         new Label(container, SWT.NONE);
         new Label(container, SWT.NONE);
         new Label(container, SWT.NONE);
@@ -320,26 +550,112 @@ public class ImportWizardPageSAS extends WizardPage {
 
         /* Set page to incomplete by default */
         setPageComplete(false);
-
     }
 
-    @Override
-    public void setVisible(boolean value){
-        super.setVisible(value);
+    /**
+     * Tries to detect the separator used within this file
+     *
+     * This goes through up to {@link ImportWizardModel#PREVIEW_MAX_LINES} lines
+     * and tries to detect the used separator by counting how often each of
+     * the available {@link #delimiters} is used.
+     *
+     * @throws IOException In case file couldn't be accessed successfully
+     */
+    private void detectDelimiter() throws IOException {
+        Charset charset = getCharset();
+
+        final BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(comboLocation.getText()), charset));
+        final IntIntOpenHashMap map = new IntIntOpenHashMap();
+        final CharIntOpenHashMap delimitors = new CharIntOpenHashMap();
+        for (int i=0; i<this.delimiters.length; i++) {
+            delimitors.put(this.delimiters[i], i);
+        }
+        int countLines = 0;
+        int countChars = 0;
+
+        /* Iterate over data */
+        String line = r.readLine();
+        outer: while ((countLines < ImportWizardModel.PREVIEW_MAX_LINES) && (line != null)) {
+
+            /* Iterate over line character by character */
+            final char[] a = line.toCharArray();
+            for (final char c : a) {
+                if (delimitors.containsKey(c)) {
+                    map.putOrAdd(delimitors.get(c), 0, 1);
+                }
+                countChars++;
+                if (countChars > ImportWizardModel.DETECT_MAX_CHARS) {
+                    break outer;
+                }
+            }
+            line = r.readLine();
+            countLines++;
+        }
+        r.close();
+
+        if (map.isEmpty()) {
+            selectedDelimiter = 0;
+            return;
+        }
+
+        /* Check which separator was used the most */
+        int max = Integer.MIN_VALUE;
+        final int [] keys = map.keys;
+        final int [] values = map.values;
+        final boolean [] allocated = map.allocated;
+        for (int i = 0; i < allocated.length; i++) {
+            if (allocated[i] && values[i] > max) {
+                max = values[i];
+                selectedDelimiter = keys[i];
+            }
+        }
+    }
+
+
+    /**
+     * Tries to detect the line break.
+     *
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    private void detectLinebreak() throws IOException {
+        BufferedReader r = null;
+        final char[] buffer = new char[ImportWizardModel.DETECT_MAX_CHARS];
+        int read = 0;
+
+        Charset charset = getCharset();
+
         try {
-            if (stream != null) stream.close();
-        } catch (Exception e){
-            /* Die silently*/
+            r = new BufferedReader(new InputStreamReader(new FileInputStream(comboLocation.getText()), charset));
+            read = r.read(buffer);
+        } finally {
+            if (r != null) {
+                r.close();
+            }
+        }
+
+        if (read > 0) {
+            for (int i = 0; i < read; i++) {
+                char current = buffer[i];
+                if (current == '\r') {
+                    if (i < buffer.length - 1 && buffer[i + 1] == '\n') { // Windows
+                        selectedLinebreak = 1;
+                    } else { // Mac OS
+                        selectedLinebreak = 2;
+                    }
+                    return;
+                }
+                if (current == '\n') { // Unix
+                    selectedLinebreak = 0;
+                    return;
+                }
+            }
         }
     }
 
     /**
      * Evaluates the page
      *
-     * This checks whether the current settings on the page make any sense
-     * and applies them appropriately. It basically checks tries to read in
-     * the preview data {@link #readPreview()}.
-     *
+     * This checks whether the current settings on the page make any sense.
      * If everything is fine, the settings are being put into the appropriate
      * data container {@link ImportWizardModel} and the  current page is marked as
      * complete by invoking {@link #setPageComplete(boolean)}. Otherwise an
@@ -357,9 +673,28 @@ public class ImportWizardPageSAS extends WizardPage {
         }
 
         try {
+            if (!customLinebreak) {
+                detectLinebreak();
+                comboLinebreak.select(selectedLinebreak);
+            }
+            if (!customDelimiter) {
+                detectDelimiter();
+                comboDelimiter.select(selectedDelimiter);
+            }
             readPreview();
+
         } catch (IOException | IllegalArgumentException e) {
             setErrorMessage(e.getMessage());
+            return;
+        } catch (TextParsingException e) {
+            setErrorMessage(Resources.getMessage("ImportWizardPageCSV.16")); //$NON-NLS-1$
+            return;
+        } catch (RuntimeException e) {
+            if (e.getCause()!=null) {
+                setErrorMessage(e.getCause().getMessage());
+            } else {
+                setErrorMessage(e.getMessage());
+            }
             return;
         }
 
@@ -370,20 +705,42 @@ public class ImportWizardPageSAS extends WizardPage {
         data.setPreviewData(previewData);
         data.setFirstRowContainsHeader(btnContainsHeader.getSelection());
         data.setFileLocation(comboLocation.getText());
-        data.setExcelSheetIndex(comboSheet.getSelectionIndex());
+        data.setCsvDelimiter(delimiters[selectedDelimiter]);
+        data.setCsvQuote(quotes[selectedQuote]);
+        data.setCsvEscape(escapes[selectedEscape]);
+        data.setCharset(Charsets.getCharsetForName(Charsets.getNamesOfAvailableCharsets()[selectedCharset]));
+        data.setCsvLinebreak(CSVSyntax.getLinebreakForLabel(CSVSyntax.getAvailableLinebreaks()[selectedLinebreak]));
 
         /* Mark page as completed */
         setPageComplete(true);
+    }
 
+    private Charset getCharset() {
+        // TODO: get charset from user
+        return Charset.defaultCharset();
+    }
+
+    private Iterator<String[]> getIteratorForSasFile(SasFileReader sasFileReader) {
+        Object[][] rawData = sasFileReader.readAll();
+        List<String[]> dataAsStrings = new ArrayList<>();
+
+        for (int rowIndex = 0; rowIndex < rawData.length; rowIndex++) {
+            String[] row = new String[rawData[rowIndex].length];
+            for (int cellIndex = 0; cellIndex < rawData[rowIndex].length; cellIndex++) {
+                row[cellIndex] = rawData[rowIndex][cellIndex].toString();
+            }
+            dataAsStrings.add(row);
+        }
+        return dataAsStrings.iterator();
     }
 
     /**
      * Reads in preview data
      *
      * This goes through up to {@link ImportWizardModel#PREVIEW_MAX_LINES} lines
-     * within the appropriate file and reads them in. It uses {@link ImportAdapter} in combination with {@link ImportConfigurationExcel} to actually read in the data.
+     * within the appropriate file and reads them in. It uses {@link ImportAdapter} in combination with {@link ImportConfigurationCSV} to actually read in the data.
      *
-     * @throws IOException
+     * @throws IOException Signals that an I/O exception has occurred.
      */
     private void readPreview() throws IOException {
 
@@ -392,32 +749,45 @@ public class ImportWizardPageSAS extends WizardPage {
 
         /* Parameters from the user interface */
         final String location = comboLocation.getText();
-        final int sheetIndex = comboSheet.getSelectionIndex();
+        final char delimiter = delimiters[selectedDelimiter];
+        final char[] linebreak = CSVSyntax.getLinebreakForLabel(CSVSyntax.getAvailableLinebreaks()[selectedLinebreak]);
+        final char quote = quotes[selectedQuote];
+        final char escape = escapes[selectedEscape];
         final boolean containsHeader = btnContainsHeader.getSelection();
+        final Charset charset = Charsets.getCharsetForName(Charsets.getNamesOfAvailableCharsets()[selectedCharset]);
 
         /* Variables needed for processing */
-        Sheet sheet = workbook.getSheetAt(sheetIndex);
-        Iterator<Row> rowIterator = sheet.iterator();
-        ImportConfigurationSAS config = new ImportConfigurationSAS(location, sheetIndex, containsHeader);
+
+        //final CSVDataInput in = new CSVDataInput(location, charset, delimiter, quote, escape, linebreak);
+        //final Iterator<String[]> it = in.iterator();
+        InputStream inputStream = new FileInputStream(location);
+        SasFileReader sasFileReader = new SasFileReaderImpl(inputStream);
+        final Iterator<String[]> it = getIteratorForSasFile(sasFileReader);
+
+//        Writer writer = new StringWriter();
+//        CSVMetadataWriter csvMetadataWriter = new CSVMetadataWriterImpl(writer);
+//        csvMetadataWriter.writeMetadata(sasFileReader.getColumns());
+//
+//        writer = new StringWriter();
+//        CSVDataWriter csvDataWriter = new CSVDataWriterImpl(writer);
+//        csvDataWriter.writeColumnNames(sasFileReader.getColumns());
+
+        final String[] firstLine;
         wizardColumns = new ArrayList<ImportWizardModelColumn>();
+        ImportConfigurationSAS config = new ImportConfigurationSAS(location, charset, delimiter, quote, escape, linebreak, containsHeader);
 
-        /* Check whether there is at least one row in sheet and retrieve it */
-        if (!rowIterator.hasNext()) {
-            throw new IOException(Resources.getMessage("ImportWizardPageExcel.10")); //$NON-NLS-1$
+        /* Check whether there is at least one line in file and retrieve it */
+        if (it.hasNext()) {
+            firstLine = it.next();
+        } else {
+            inputStream.close();
+            throw new IOException(Resources.getMessage("ImportWizardPageCSV.17")); //$NON-NLS-1$
         }
 
-        /* Get first row */
-        Row firstRow = rowIterator.next();
+        /* Iterate over columns and add it to {@link #allColumns} */
+        for (int i = 0; i < firstLine.length; i++) {
 
-        /* Check whether there is at least one column in row */
-        if (firstRow.getPhysicalNumberOfCells() < 1) {
-            throw new IOException(Resources.getMessage("ImportWizardPageExcel.11")); //$NON-NLS-1$
-        }
-
-        /* Iterate over columns and add them */
-        for (int i = 0; i < firstRow.getPhysicalNumberOfCells(); i++) {
-
-            ImportColumn column = new ImportColumnExcel(i, DataType.STRING);
+            ImportColumn column = new ImportColumnCSV(i, DataType.STRING);
             ImportWizardModelColumn wizardColumn = new ImportWizardModelColumn(column);
 
             wizardColumns.add(wizardColumn);
@@ -434,13 +804,19 @@ public class ImportWizardPageSAS extends WizardPage {
             count++;
         }
 
+        inputStream.close();
+
         /* Remove first entry as it always contains name of columns */
         previewData.remove(0);
 
         /* Check whether there is actual any data */
         if (previewData.size() == 0) {
-            throw new IOException(Resources.getMessage("ImportWizardPageExcel.12")); //$NON-NLS-1$
+            throw new IOException(Resources.getMessage("ImportWizardPageCSV.18")); //$NON-NLS-1$
         }
+
+        /*
+         * Show preview in appropriate table
+         */
 
         /* Disable redrawing once redesign is finished */
         tablePreview.setRedraw(false);
@@ -454,14 +830,14 @@ public class ImportWizardPageSAS extends WizardPage {
         for (ImportWizardModelColumn column : wizardColumns) {
 
             TableViewerColumn tableViewerColumn = new TableViewerColumn(tableViewerPreview, SWT.NONE);
-            tableViewerColumn.setLabelProvider(new ExcelColumnLabelProvider(((ImportColumnExcel) column.getColumn()).getIndex()));
+            tableViewerColumn.setLabelProvider(new SASColumnLabelProvider(((ImportColumnCSV) column.getColumn()).getIndex()));
 
             TableColumn tableColumn = tableViewerColumn.getColumn();
             tableColumn.setWidth(100);
 
             if (btnContainsHeader.getSelection()) {
                 tableColumn.setText(column.getColumn().getAliasName());
-                tableColumn.setToolTipText(Resources.getMessage("ImportWizardPageExcel.13") + ((ImportColumnExcel) column.getColumn()).getIndex()); //$NON-NLS-1$
+                tableColumn.setToolTipText(Resources.getMessage("ImportWizardPageCSV.19") + ((ImportColumnCSV) column.getColumn()).getIndex()); //$NON-NLS-1$
             }
         }
 
@@ -473,54 +849,5 @@ public class ImportWizardPageSAS extends WizardPage {
         tablePreview.setVisible(true);
         tablePreview.layout();
         tablePreview.setRedraw(true);
-    }
-
-    /**
-     * Reads in the available sheets from file
-     *
-     * This reads in the available sheets from the file chosen at {@link #comboLocation} and adds them as items to {@link #comboSheet}.
-     *
-     * @throws IOException
-     */
-    private void readSheets() throws IOException {
-
-        /* Remove previous items */
-        comboSheet.removeAll();
-
-        /* Get workbook */
-        try {
-            try {
-                if (stream != null) stream.close();
-            } catch (Exception e){
-                /* Die silently*/
-            }
-
-            stream = new FileInputStream(comboLocation.getText());
-            workbook = WorkbookFactory.create(stream);
-        } catch (InvalidFormatException e) {
-            throw new IOException(Resources.getMessage("ImportWizardPageExcel.14")); //$NON-NLS-1$
-        } catch (IllegalArgumentException e) {
-            throw new IOException(Resources.getMessage("ImportWizardPageExcel.14")); //$NON-NLS-1$
-        } catch (Exception e) {
-            throw new IOException(Resources.getMessage("ImportWizardPageExcel.15")); //$NON-NLS-1$
-        }
-
-        /* Add all sheets to combo */
-        for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-            comboSheet.add(workbook.getSheetName(i));
-        }
-    }
-
-    /**
-     * Reset page
-     */
-    private void resetPage() {
-        comboSheet.setVisible(false);
-        comboSheet.removeAll();
-        lblSheet.setVisible(false);
-        btnContainsHeader.setEnabled(true);
-        btnContainsHeader.setVisible(false);
-        tablePreview.removeAll();
-        tablePreview.setVisible(false);
     }
 }

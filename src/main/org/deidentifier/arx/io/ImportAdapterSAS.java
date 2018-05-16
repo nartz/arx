@@ -17,146 +17,155 @@
 
 package org.deidentifier.arx.io;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import com.epam.parso.SasFileReader;
+import com.epam.parso.impl.SasFileReaderImpl;
+import org.apache.commons.io.input.CountingInputStream;
 import org.deidentifier.arx.DataType;
-import org.deidentifier.arx.io.ImportConfigurationSAS.ExcelFileTypes;
 
 /**
- * Import adapter for Excel files
+ * Import adapter for CSV files
  *
- * This adapter can import data from Excel files. It handles both XLS and XLSX
- * files. The file type itself is defined by {@link ImportConfigurationExcel}.
- * The files are accessed using Apache POI.
+ * This adapter can import data from a CSV file. The CSV file itself is
+ * described by an appropriate {@link ImportConfigurationCSV} object. Internally
+ * this class makes use of {@link CSVDataInput} to read the CSV file on a line
+ * by line basis. A counting input stream (@link CountingInputStream} is used in
+ * order for {@link #getProgress() to be able to return the percentage of data
+ * that has already been processed.
  *
  * @author Karol Babioch
  * @author Fabian Prasser
- * @see <a href="https://poi.apache.org/">Aapache POI</a>
  */
 public class ImportAdapterSAS extends ImportAdapter {
 
-    /** The configuration describing the Excel file. */
+    /** The configuration describing the CSV file being used. */
     private ImportConfigurationSAS config;
 
-    /** Actual iterator used to go through data. */
-    private Iterator<Row>            iterator;
+    /** The size of the CSV file. */
+    private long                   bytesTotal;
 
     /**
-     * Contains the last row as returned by the iterator.
+     * Counting input stream
+     *
+     * This is used within {@link #getProgress()} to be able to know how many
+     * bytes have already been processed.
+     */
+    private CountingInputStream    cin;
+
+    /**
+     * @see {@link CSVDataInput}
+     */
+    private CSVDataInput           in;
+
+    /**
+     * Actual iterator used to go through data within CSV file.
+     *
+     * @see {@link CSVDataInput#iterator()}
+     */
+    private Iterator<String[]>     it;
+
+    /**
+     * Contains the last row as returned by {@link CSVDataInput#iterator()}.
      *
      * @note This row cannot be simply returned, but needs to be further
      *       processed, e.g. to return only selected columns.
      */
-    private Row                      row;
+    private String[]               row;
 
     /**
      * Indicates whether the first row has already been returned
      *
-     * The first row contains the name of the columns and always needs to be
-     * returned first in order to guarantee that the framework will pick up the
-     * names correctly.
+     * The first row contains the name of the columns. Depending upon {@link #containsHeader} and whether the name of the column has been
+     * assigned explicitly, this is either the value of the file itself, the
+     * value defined by the user, or a default value.
      */
-    private boolean                  headerReturned = false;
-
-    /** Number of rows within the specified sheet. */
-    private int                      totalRows;
-
-    /** Current row {@link lastRow} is referencing. */
-    private int                      currentRow     = 0;
-
-    /** TODO */
-    private FileInputStream          input;
+    private boolean                headerReturned = false;
 
     /**
-     * Creates a new instance of this object with given configuration
+     * Creates a new instance of this object with given configuration.
      *
-     * Depending upon the file type it either uses HSSF or XSSF to access the
-     * file. In both cases {@link #iterator} will be assigned a reference to
-     * an iterator, which can then be used to access the actual data on a row by
-     * row basis.
-     *
-     * @param config
-     *            {@link #config}
-     *
-     * @throws IOException
-     *             In case file doesn't contain actual data
+     * @param config {@link #config}
+     * @throws IOException In case file doesn't contain actual data
      */
     protected ImportAdapterSAS(ImportConfigurationSAS config) throws IOException {
 
         super(config);
         this.config = config;
+        this.bytesTotal = new File(config.getFileLocation()).length();
 
-        /* Get row iterator */
-        input = new FileInputStream(config.getFileLocation());
-        Workbook workbook = null;
+        /* Used to keep track of progress */
+        cin = new CountingInputStream(new FileInputStream(new File(config.getFileLocation())));
 
-        if (config.getExcelFileType() == ExcelFileTypes.XLS) {
-            workbook = new HSSFWorkbook(input);
-        } else if (config.getExcelFileType() == ExcelFileTypes.XLSX) {
-            workbook = new XSSFWorkbook(input);
-        } else {
-            input.close();
-            throw new IllegalArgumentException("File type not supported");
-        }
+        /* Get iterator */
+        InputStream inputStream = new FileInputStream(config.getFileLocation());
+        SasFileReader sasFileReader = new SasFileReaderImpl(inputStream);
 
-        workbook.setMissingCellPolicy(Row.CREATE_NULL_AS_BLANK);
-        Sheet sheet = workbook.getSheetAt(config.getSheetIndex());
-        iterator = sheet.iterator();
+        it = getIteratorForSasFile(sasFileReader);
 
-        /* Get total number of rows */
-        totalRows = sheet.getPhysicalNumberOfRows();
-
-        /* Check whether there is actual data within the file */
-        if (iterator.hasNext()) {
-
-            row = iterator.next();
+        /* Check whether there is actual data within the CSV file */
+        if (it.hasNext()) {
+            row = it.next();
             if (config.getContainsHeader()) {
-                if (!iterator.hasNext()) {
-                    throw new IOException("File contains nothing but header");
+                if (!it.hasNext()) {
+                    throw new IOException("CSV contains nothing but header");
                 }
             }
         } else {
-            throw new IOException("File contains no data");
+            throw new IOException("CSV file contains no data");
         }
 
         // Create header
         header = createHeader();
     }
 
+    private Iterator<String[]> getIteratorForSasFile(SasFileReader sasFileReader) {
+        Object[][] rawData = sasFileReader.readAll();
+        List<String[]> dataAsStrings = new ArrayList<>();
+
+        for (int rowIndex = 0; rowIndex < rawData.length; rowIndex++) {
+            String[] row = new String[rawData[rowIndex].length];
+            for (int cellIndex = 0; cellIndex < rawData[rowIndex].length; cellIndex++) {
+                row[cellIndex] = rawData[rowIndex][cellIndex].toString();
+            }
+            dataAsStrings.add(row);
+        }
+        return dataAsStrings.iterator();
+    }
+
     /**
      * Returns the percentage of data that has already been returned
      *
-     * The basis for this calculation is the row currently being accessed.
+     * This divides the amount of bytes that have already been read by the
+     * amount of total bytes and casts the result into a percentage.
      *
      * @return
-     * @see {@link #currentRow}
-     * @see {@link #totalRows}
      */
     @Override
     public int getProgress() {
-        return (int) (((double) currentRow / (double) totalRows) * 100d);
+
+        /* Check whether stream has been opened already at all */
+        if (cin == null) {
+            return 0;
+        }
+
+        long bytesRead = cin.getByteCount();
+        return (int) ((double) bytesRead / (double) bytesTotal * 100d);
     }
 
     /**
      * Indicates whether there is another element to return
      *
-     * This returns true when the file contains another line, which could be
-     * accessed by {@link #iterator}.
+     * This returns true when the CSV file has another line, which would be
+     * assigned to {@link #row} during the last iteration of {@link #next()}.
      *
      * @return
-     * @note {@link #row} effectively works as buffer and will always be set
-     *       up by the previous iteration, so once there is no data, it will be
-     *       assigned <code>null</code>, which is checked for here.
      */
     @Override
     public boolean hasNext() {
@@ -182,32 +191,28 @@ public class ImportAdapterSAS extends ImportAdapter {
         }
 
         /* Create regular row */
-        String[] result = new String[indexes.length];
-        for (int i = 0; i < indexes.length; i++) {
-
-            row.getCell(indexes[i]).setCellType(Cell.CELL_TYPE_STRING);
-            result[i] = IOUtil.trim(row.getCell(indexes[i]).getStringCellValue());
-
-            if (!dataTypes[i].isValid(result[i])) {
-                if (config.columns.get(i).isCleansing()) {
-                    result[i] = DataType.NULL_VALUE;
-                } else {
-                    throw new IllegalArgumentException("Data value does not match data type");
+        String[] result;
+        try {
+            result = new String[indexes.length];
+            for (int i = 0; i < indexes.length; i++) {
+                result[i] = row[indexes[i]];
+                if (!dataTypes[i].isValid(result[i])) {
+                    if (config.columns.get(i).isCleansing()) {
+                        result[i] = DataType.NULL_VALUE;
+                    } else {
+                        throw new IllegalArgumentException("Data value does not match data type");
+                    }
                 }
             }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Inconsistent length of header and records");
         }
 
         /* Fetches the next row, which will be used in next iteration */
-        if (iterator.hasNext()) {
-            row = iterator.next();
-            currentRow++;
+        if (it.hasNext()) {
+            row = it.next();
         } else {
             row = null;
-            try {
-                input.close();
-            } catch (Exception e) {
-                /* Die silently */
-            }
         }
 
         /* Return resulting row */
@@ -227,7 +232,7 @@ public class ImportAdapterSAS extends ImportAdapter {
      *
      * This returns a string array with the names of the columns that will be
      * returned later on by iterating over this object. Depending upon the
-     * configuration {@link ImportConfigurationExcel#getContainsHeader()} and
+     * configuration {@link ImportConfigurationCSV#getContainsHeader()} and
      * whether or not names have been assigned explicitly either the appropriate
      * values will be returned, or names will be made up on the fly following
      * the pattern "Column #x", where x is incremented for each column.
@@ -237,11 +242,9 @@ public class ImportAdapterSAS extends ImportAdapter {
     private String[] createHeader() {
 
         /* Preparation work */
-        if (config.getContainsHeader()) {
-            config.prepare(row);
-        }
-        indexes = getIndexesToImport();
-        dataTypes = getColumnDatatypes();
+        if (config.getContainsHeader()) this.config.prepare(row);
+        this.indexes = getIndexesToImport();
+        this.dataTypes = getColumnDatatypes();
 
         /* Initialization */
         String[] header = new String[config.getColumns().size()];
@@ -252,31 +255,28 @@ public class ImportAdapterSAS extends ImportAdapter {
 
             ImportColumn column = columns.get(i);
 
-            row.getCell(((ImportColumnExcel) column).getIndex()).setCellType(Cell.CELL_TYPE_STRING);
-            String name = IOUtil.trim(row.getCell(((ImportColumnExcel) column).getIndex()).getStringCellValue());
+            /* Check whether there is a header, which is not empty */
+            if (config.getContainsHeader() &&
+                !row[((ImportColumnCSV) column).getIndex()].equals("")) {
 
-            if (config.getContainsHeader() && !name.equals("")) {
-                /* Assign name of file itself */
-                header[i] = name;
+                /* Assign name of CSV file itself */
+                header[i] = row[((ImportColumnCSV) column).getIndex()];
             } else {
                 /* Nothing defined in header (or empty), build name manually */
-                header[i] = "Column #" + ((ImportColumnExcel) column).getIndex();
+                header[i] = "Column #" + ((ImportColumnCSV) column).getIndex();
             }
 
             if (column.getAliasName() != null) {
                 /* Name has been assigned explicitly */
                 header[i] = column.getAliasName();
             }
-
             column.setAliasName(header[i]);
         }
 
         /* Fetch next row in preparation for next iteration */
         if (config.getContainsHeader()) {
-
-            if (iterator.hasNext()) {
-                row = iterator.next();
-                currentRow++;
+            if (it.hasNext()) {
+                row = it.next();
             } else {
                 row = null;
             }
@@ -300,13 +300,14 @@ public class ImportAdapterSAS extends ImportAdapter {
         /* Get indexes to import from */
         ArrayList<Integer> indexes = new ArrayList<Integer>();
         for (ImportColumn column : config.getColumns()) {
-            indexes.add(((ImportColumnExcel) column).getIndex());
+            indexes.add(((ImportColumnCSV) column).getIndex());
         }
 
         int[] result = new int[indexes.size()];
         for (int i = 0; i < result.length; i++) {
             result[i] = indexes.get(i);
         }
+
         return result;
     }
 }

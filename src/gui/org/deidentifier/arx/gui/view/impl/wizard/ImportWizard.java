@@ -271,7 +271,7 @@ public class ImportWizard extends ARXWizard<ImportConfiguration> {
 
         } else if (data.getSourceType() == SourceType.SAS) {
             configuration = new ImportConfigurationSAS(data.getFileLocation(),
-                data.getExcelSheetIndex(),
+                data.getCharset(),
                 data.getFirstRowContainsHeader());
         } else {
             throw new RuntimeException("Configuration type not supported"); //$NON-NLS-1$

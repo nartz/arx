@@ -17,154 +17,182 @@
 
 package org.deidentifier.arx.io;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
+import java.nio.charset.Charset;
 
 /**
- * Configuration describing an Excel file
- *
- * This is used to describe Excel files. Both file types (XLS and XLSX) are
- * supported. The file type can either be detected automatically by the file
- * extension, or alternatively can be set manually. Furthermore there is a sheet
- * index {@link #sheetIndex}, which describes which sheet within the file should
- * be used.
+ * Configuration describing a CSV file.
  *
  * @author Karol Babioch
  * @author Fabian Prasser
  */
 public class ImportConfigurationSAS extends ImportConfigurationFile implements IImportConfigurationWithHeader { // NO_UCD
 
-    /**
-     * Valid file types for Excel files
-     *
-     * XLS is the "old" Excel file type, XLSX is the "new" Excel file type.
-     */
-    public enum ExcelFileTypes {
-        /**  TODO */
-        XLS,
+    /** Character that separates the columns from each other. */
+    private final char   delimiter;
 
-        /**  TODO */
-        XLSX
-    };
+    /** Character that delimits strings. */
+    private final char   quote;
 
-    /**
-     * Used file type
-     *
-     * This is the actual filetype that will be used.
-     *
-     * @see {@link #setExcelFileType(ExcelFileTypes excelFileType)}
-     */
-    private ExcelFileTypes excelFileType;
+    /** Characters that delimits lines. */
+    private final char[] linebreak;
 
-    /** Sheet index. */
-    private int            sheetIndex;
+    /** Character that escapes. */
+    private final char   escape;
 
     /**
      * Indicates whether first row contains header (names of columns).
      *
      * @see {@link IImportConfigurationWithHeader}
      */
-    private boolean        containsHeader;
+    private boolean      containsHeader;
+
+    /** The charset of the CSV file */
+    private final Charset charset;
 
     /**
      * Creates a new instance of this object.
      *
      * @param fileLocation {@link #setFileLocation(String)}
-     * @param excelFileType {@link #setExcelFileType(ExcelFileTypes)}
-     * @param sheetIndex {@link #setSheetIndex(int)}
-     * @param containsHeader {@link #setContainsHeader(boolean)}
+     * @param containsHeader {@link #containsHeader}
      */
     public ImportConfigurationSAS(String fileLocation,
-                                  ExcelFileTypes excelFileType,
-                                  int sheetIndex,
+                                  Charset charset,
                                   boolean containsHeader) {
-
-        setFileLocation(fileLocation);
-        setExcelFileType(excelFileType);
-        setSheetIndex(sheetIndex);
-        setContainsHeader(containsHeader);
+        this(fileLocation, charset, CSVSyntax.DEFAULT_DELIMITER, CSVSyntax.DEFAULT_QUOTE, CSVSyntax.DEFAULT_ESCAPE, containsHeader);
     }
 
     /**
-     * Creates a new instance of this object without specifying the file type
+     * Creates a new instance of this object.
      *
-     * The file type will be detected automatically using the file extension. By
-     * default "xlsx" is assumed. In case the file extension is "xls" the file
-     * type will be set to {@link ExcelFileTypes#XLS}.
-     *
-     * @param fileLocation
-     *            {@link #setFileLocation(String)}
-     * @param sheetIndex
-     *            {@link #sheetIndex}
-     * @param containsHeader
-     *            {@link #containsHeader}
+     * @param fileLocation {@link #setFileLocation(String)}
+     * @param charset {@link #charset}
+     * @param delimiter {@link #separator}
+     * @param containsHeader {@link #containsHeader}
      */
     public ImportConfigurationSAS(String fileLocation,
-                                  int sheetIndex,
+                                  Charset charset,
+                                  char delimiter,
+                                  boolean containsHeader) {
+        this(fileLocation, charset, delimiter, CSVSyntax.DEFAULT_QUOTE, CSVSyntax.DEFAULT_ESCAPE, containsHeader);
+    }
+
+    /**
+     * Creates a new instance of this object.
+     *
+     * @param fileLocation {@link #setFileLocation(String)}
+     * @param charset {@link #charset}
+     * @param delimiter {@link #delimiter}
+     * @param quote {@link #quote}
+     * @param containsHeader {@link #containsHeader}
+     */
+    public ImportConfigurationSAS(String fileLocation,
+                                  Charset charset,
+                                  char delimiter,
+                                  char quote,
+                                  boolean containsHeader) {
+        this(fileLocation, charset, delimiter, quote, CSVSyntax.DEFAULT_ESCAPE, containsHeader);
+    }
+
+    /**
+     * Creates a new instance of this object.
+     *
+     * @param fileLocation {@link #setFileLocation(String)}
+     * @param charset {@link #charset}
+     * @param delimiter {@link #delimiter}
+     * @param quote {@link #quote}
+     * @param escape {@link #escape}
+     * @param containsHeader {@link #containsHeader}
+     */
+    public ImportConfigurationSAS(String fileLocation,
+                                  Charset charset,
+                                  char delimiter,
+                                  char quote,
+                                  char escape,
+                                  boolean containsHeader) {
+        this(fileLocation, charset, delimiter, quote, escape, CSVSyntax.DEFAULT_LINEBREAK, containsHeader);
+    }
+
+    /**
+     * Creates a new instance of this object.
+     *
+     * @param fileLocation the file location
+     * @param charset the charset
+     * @param delimiter the delimiter
+     * @param quote the quote
+     * @param escape the escape
+     * @param linebreak the linebreak
+     * @param containsHeader the contains header
+     */
+    public ImportConfigurationSAS(String fileLocation,
+                                  Charset charset,
+                                  char delimiter,
+                                  char quote,
+                                  char escape,
+                                  char[] linebreak,
                                   boolean containsHeader) {
 
-        ExcelFileTypes excelFileType;
-        String ext = FilenameUtils.getExtension(fileLocation);
-
-        switch (ext) {
-            case "xls":
-                excelFileType = ExcelFileTypes.XLS;
-                break;
-
-            default:
-                excelFileType = ExcelFileTypes.XLSX;
-                break;
-        }
-
         setFileLocation(fileLocation);
-        setSheetIndex(sheetIndex);
-        setContainsHeader(containsHeader);
-        setExcelFileType(excelFileType);
+        this.quote = quote;
+        this.delimiter = delimiter;
+        this.escape = escape;
+        this.containsHeader = containsHeader;
+        this.linebreak = linebreak;
+        this.charset = charset;
     }
 
     /**
      * Adds a single column to import from
      *
-     * This makes sure that only {@link ImportColumnExcel} can be added,
-     * otherwise an {@link IllegalArgumentException} will be thrown.
+     * This makes sure that only {@link ImportColumnCSV} can be added, otherwise
+     * an {@link IllegalArgumentException} will be thrown.
      *
      * @param column
-     *            A single column to import from, {@link ImportColumnExcel}
+     *            A single column to import from, {@link ImportColumnCSV}
      */
     @Override
     public void addColumn(ImportColumn column) {
 
-        if (!(column instanceof ImportColumnExcel)) {
-            throw new IllegalArgumentException("Column needs to be of type ExcelColumn");
+        if (!(column instanceof ImportColumnCSV)) {
+            throw new IllegalArgumentException("Column needs to be of type CSVColumn");
         }
 
-        if (!((ImportColumnExcel) column).isIndexSpecified() &&
-            !this.getContainsHeader()){
+        if (!((ImportColumnCSV) column).isIndexSpecified() &&
+            !getContainsHeader()) {
             final String ERROR = "Adressing columns by name is only possible if the source contains a header";
             throw new IllegalArgumentException(ERROR);
         }
 
         for (ImportColumn c : columns) {
-            if (((ImportColumnExcel) column).isIndexSpecified() &&
-                ((ImportColumnExcel) column).getIndex() == ((ImportColumnExcel) c).getIndex()) {
+            if (((ImportColumnCSV) column).isIndexSpecified() &&
+                (((ImportColumnCSV) column).getIndex() == ((ImportColumnCSV) c).getIndex())) {
                 throw new IllegalArgumentException("Column for this index already assigned");
             }
 
-            if (!((ImportColumnExcel) column).isIndexSpecified() &&
-                ((ImportColumnExcel) column).getName().equals(((ImportColumnExcel) c).getName())) {
+            if (!((ImportColumnCSV) column).isIndexSpecified() &&
+                ((ImportColumnCSV) column).getName().equals(((ImportColumnCSV) c).getName())) {
                 throw new IllegalArgumentException("Column for this name already assigned");
             }
 
-            if (column.getAliasName() != null && c.getAliasName() != null &&
+            if ((column.getAliasName() != null) && (c.getAliasName() != null) &&
                 c.getAliasName().equals(column.getAliasName())) {
                 throw new IllegalArgumentException("Column names need to be unique");
             }
         }
-        this.columns.add(column);
+
+        columns.add(column);
     }
 
     /**
+     * Returns the charset of the CSV file.
+     * @return
+     */
+    public Charset getCharset() {
+        return charset;
+    }
+
+    /**
+     * Gets the contains header.
+     *
      * @return {@link #containsHeader}
      */
     @Override
@@ -173,33 +201,54 @@ public class ImportConfigurationSAS extends ImportConfigurationFile implements I
     }
 
     /**
-     * @return {@link #ExcelFileTypes}
+     * Gets the delimiter.
+     *
+     * @return {@link #delimiter}
      */
-    public ExcelFileTypes getExcelFileType() {
-        return excelFileType;
+    public char getDelimiter() {
+        return delimiter;
     }
 
     /**
-     * @return {@link #sheetIndex}
+     * Gets the escape.
+     *
+     * @return {@link #quote}
      */
-    public int getSheetIndex() {
-        return sheetIndex;
+    public char getEscape() {
+        return escape;
+    }
+
+    /**
+     * Gets the linebreak.
+     *
+     * @return {@link #linebreak}
+     */
+    public char[] getLinebreak() {
+        return linebreak;
+    }
+
+    /**
+     * Gets the quote.
+     *
+     * @return {@link #quote}
+     */
+    public char getQuote() {
+        return quote;
     }
 
     /**
      * Sets the indexes based on the header.
      *
-     * @param row
+     * @param row the row
      */
-    public void prepare(Row row) {
+    public void prepare(String[] row) {
 
         for (ImportColumn c : super.getColumns()) {
-            ImportColumnExcel column = (ImportColumnExcel) c;
+            ImportColumnCSV column = (ImportColumnCSV) c;
             if (!column.isIndexSpecified()) {
                 boolean found = false;
-                for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
-                    row.getCell(i).setCellType(Cell.CELL_TYPE_STRING);
-                    if (row.getCell(i).getStringCellValue().equals(column.getName())) {
+                for (int i = 0; i < row.length; i++) {
+                    if (row[i].equals(column.getName())) {
                         found = true;
                         column.setIndex(i);
                     }
@@ -212,28 +261,12 @@ public class ImportConfigurationSAS extends ImportConfigurationFile implements I
     }
 
     /**
-     * @param containsHeader
-     *            {@link #containsHeader}
+     * Sets the contains header.
+     *
+     * @param containsHeader {@link #containsHeader}
      */
     @Override
     public void setContainsHeader(boolean containsHeader) {
         this.containsHeader = containsHeader;
-    }
-
-    /**
-     * @param excelFileType
-     *            {@link #ExcelFileTypes}
-     */
-    public void setExcelFileType(ExcelFileTypes excelFileType) {
-        this.excelFileType = excelFileType;
-    }
-
-
-    /**
-     * @param sheetIndex
-     *            {@link #sheetIndex}
-     */
-    public void setSheetIndex(int sheetIndex) {
-        this.sheetIndex = sheetIndex;
     }
 }
