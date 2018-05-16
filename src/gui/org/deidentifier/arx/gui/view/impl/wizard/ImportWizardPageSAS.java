@@ -57,9 +57,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
-
-import com.carrotsearch.hppc.CharIntOpenHashMap;
-import com.carrotsearch.hppc.IntIntOpenHashMap;
 import com.univocity.parsers.common.TextParsingException;
 
 
@@ -128,31 +125,7 @@ public class ImportWizardPageSAS extends WizardPage {
     private Button                             btnContainsHeader;
 
     /** Combo. */
-    private Combo                              comboDelimiter;
-
-    /** Combo. */
-    private Combo                              comboLinebreak;
-
-    /** Combo. */
-    private Combo                              comboQuote;
-
-    /** Combo. */
-    private Combo                              comboEscape;
-
-    /** Combo. */
     private Combo                              comboCharset;
-
-    /** Label. */
-    private Label                              lblDelimiter;
-
-    /** Label. */
-    private Label                              lblQuote;
-
-    /** Label. */
-    private Label                              lblLinebreak;
-
-    /** Label. */
-    private Label                              lblEscape;
 
     /** Label. */
     private Label                              lblCharset;
@@ -164,86 +137,9 @@ public class ImportWizardPageSAS extends WizardPage {
     private TableViewer                        tableViewerPreview;
 
     /**
-     * Currently selected separator (index).
-     *
-     * @see {@link #delimiters}
-     */
-    private int                                selectedDelimiter = 0;
-
-    /**
-     * Currently selected delimiter (index).
-     *
-     * @see {@link #quotes}
-     */
-    private int                                selectedQuote = 0;
-
-    /**
-     * Currently selected escape (index).
-     *
-     * @see {@link #quotes}
-     */
-    private int                                selectedEscape    = 0;
-
-    /**
-     * Currently selected line break (index).
-     */
-    private int                                selectedLinebreak    = 0;
-
-    /**
      * Currently selected charset (index).
      */
     private int                                selectedCharset    = 0;
-
-
-    /**
-     * Supported escape characters.
-     *
-     * @see {@link #labels}
-     * @note This are the escape characters.
-     */
-    private final char[]                       escapes           = { '\"', '\\' };
-
-    /**
-     * Supported delimiters.
-     *
-     * @see {@link #labels}
-     * @note This are the delimiters.
-     */
-    private final char[]                       quotes        = { '\"', '\'' };
-
-    /**
-     * Supported separators.
-     *
-     * @see {@link #labels}
-     * @note This are the separators itself. The appropriate combo box will
-     *       display the {@link #labels} instead.
-     */
-    private final char[]                       delimiters        = { ';', ',', '|', '\t' };
-
-    /**
-     * Labels for separators defined in {@link #delimiters}.
-     *
-     * @see {@link #delimiters}
-     */
-    private final String[]                     labels            = { ";", ",", "|", "Tab" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-
-    /**
-     * Indicates whether separator was detected automatically or by the user
-     *
-     * The separator will usually be detected automatically {@link #detectDelimiter()}. In case the user selected another separator
-     * by hand, this flag will be set to true, making sure the rest of the logic
-     * knows about it.
-     */
-    private boolean                            customDelimiter;
-
-    /**
-     * Indicates whether line break was detected automatically or by the user
-     *
-     * The line break will usually be detected automatically {@link #detectLinebreak()}. In case the user selected another line break
-     * by hand, this flag will be set to true, making sure the rest of the logic
-     * knows about it.
-     */
-    private boolean                            customLinebreak;
 
     /** Data for preview. */
     private final ArrayList<String[]>          previewData       = new ArrayList<String[]>();
@@ -304,8 +200,6 @@ public class ImportWizardPageSAS extends WizardPage {
                 comboCharset.setVisible(true);
                 //comboEscape.setVisible(true);
                 btnContainsHeader.setVisible(true);
-                customDelimiter = false;
-                customLinebreak = false;
                 evaluatePage();
             }
         });
@@ -467,11 +361,8 @@ public class ImportWizardPageSAS extends WizardPage {
         data.setPreviewData(previewData);
         data.setFirstRowContainsHeader(btnContainsHeader.getSelection());
         data.setFileLocation(comboLocation.getText());
-        data.setCsvDelimiter(delimiters[selectedDelimiter]);
-        data.setCsvQuote(quotes[selectedQuote]);
-        data.setCsvEscape(escapes[selectedEscape]);
+
         data.setCharset(Charsets.getCharsetForName(Charsets.getNamesOfAvailableCharsets()[selectedCharset]));
-        data.setCsvLinebreak(CSVSyntax.getLinebreakForLabel(CSVSyntax.getAvailableLinebreaks()[selectedLinebreak]));
 
         /* Mark page as completed */
         setPageComplete(true);
