@@ -24,15 +24,7 @@
         <jarDirectory url="file://$MODULE_DIR$/lib" recursive="true" type="SOURCES" />
       </library>
     </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$USER_HOME$/Downloads/parso-master/classes/artifacts/parso_jar/parso.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
     <orderEntry type="library" exported="" name="lib" level="project" />
+    <orderEntry type="library" name="parso-master" level="project" />
   </component>
 </module>
