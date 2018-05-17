@@ -151,7 +151,7 @@ public class ImportWizardPageSAS extends WizardPage {
     {
 
         super("WizardImportSasPage"); //$NON-NLS-1$
-        setTitle("SAS"); //$NON-NLS-1$
+        setTitle("SAS- test2"); //$NON-NLS-1$
         setDescription(Resources.getMessage("ImportWizardPageCSV.6")); //$NON-NLS-1$
         this.wizardImport = wizardImport;
 
