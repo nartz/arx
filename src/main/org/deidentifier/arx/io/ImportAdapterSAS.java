@@ -105,11 +105,6 @@ public class ImportAdapterSAS extends ImportAdapter {
         /* Check whether there is actual data within the CSV file */
         if (it.hasNext()) {
             row = it.next();
-            if (config.getContainsHeader()) {
-                if (!it.hasNext()) {
-                    throw new IOException("CSV contains nothing but header");
-                }
-            }
         } else {
             throw new IOException("CSV file contains no data");
         }
@@ -222,7 +217,6 @@ public class ImportAdapterSAS extends ImportAdapter {
     private String[] createHeader(List<Column> sasColumns) {
 
         /* Preparation work */
-        if (config.getContainsHeader()) this.config.prepare(row);
         this.indexes = getIndexesToImport();
         this.dataTypes = getColumnDatatypes();
 
@@ -243,15 +237,6 @@ public class ImportAdapterSAS extends ImportAdapter {
                 header[i] = column.getAliasName();
             }
             column.setAliasName(header[i]);
-        }
-
-        /* Fetch next row in preparation for next iteration */
-        if (config.getContainsHeader()) {
-            if (it.hasNext()) {
-                row = it.next();
-            } else {
-                row = null;
-            }
         }
 
         /* Return header */

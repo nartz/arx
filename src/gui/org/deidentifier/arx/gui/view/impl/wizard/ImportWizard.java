@@ -270,9 +270,7 @@ public class ImportWizard extends ARXWizard<ImportConfiguration> {
                                                         data.getSelectedJdbcTable());
 
         } else if (data.getSourceType() == SourceType.SAS) {
-            configuration = new ImportConfigurationSAS(data.getFileLocation(),
-                data.getCharset(),
-                data.getFirstRowContainsHeader());
+            configuration = new ImportConfigurationSAS(data.getFileLocation(), data.getCharset());
         } else {
             throw new RuntimeException("Configuration type not supported"); //$NON-NLS-1$
         }

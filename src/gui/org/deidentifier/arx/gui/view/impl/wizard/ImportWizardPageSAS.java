@@ -122,9 +122,6 @@ public class ImportWizardPageSAS extends WizardPage {
     /** Button. */
     private Button                             btnChoose;
 
-    /** Button. */
-    private Button                             btnContainsHeader;
-
     /** Combo. */
     private Combo                              comboCharset;
 
@@ -189,18 +186,8 @@ public class ImportWizardPageSAS extends WizardPage {
              */
             @Override
             public void widgetSelected(SelectionEvent arg0) {
-                /* Make widgets visible */
-                //lblDelimiter.setVisible(true);
-                //comboDelimiter.setVisible(true);
-                //lblQuote.setVisible(true);
-                //comboQuote.setVisible(true);
-                //lblLinebreak.setVisible(true);
-                //comboLinebreak.setVisible(true);
-                //lblEscape.setVisible(true);
                 lblCharset.setVisible(true);
                 comboCharset.setVisible(true);
-                //comboEscape.setVisible(true);
-                btnContainsHeader.setVisible(true);
                 evaluatePage();
             }
         });
@@ -276,25 +263,6 @@ public class ImportWizardPageSAS extends WizardPage {
         /* Place holder */
         new Label(container, SWT.NONE);
 
-        /* Contains header button */
-        btnContainsHeader = new Button(container, SWT.CHECK);
-        btnContainsHeader.setVisible(false);
-        btnContainsHeader.setText(Resources.getMessage("ImportWizardPageCSV.14")); //$NON-NLS-1$
-        btnContainsHeader.setSelection(true);
-        btnContainsHeader.addSelectionListener(new SelectionAdapter() {
-
-            /**
-             * (Re-)Evaluate page
-             */
-            @Override
-            public void widgetSelected(SelectionEvent arg0) {
-                evaluatePage();
-            }
-        });
-
-        /* Place holder */
-        new Label(container, SWT.NONE);
-
         /* Place holders */
         new Label(container, SWT.NONE);
         new Label(container, SWT.NONE);
@@ -360,7 +328,6 @@ public class ImportWizardPageSAS extends WizardPage {
 
         data.setWizardColumns(wizardColumns);
         data.setPreviewData(previewData);
-        data.setFirstRowContainsHeader(btnContainsHeader.getSelection());
         data.setFileLocation(comboLocation.getText());
 
         data.setCharset(Charsets.getCharsetForName(Charsets.getNamesOfAvailableCharsets()[selectedCharset]));
@@ -389,7 +356,6 @@ public class ImportWizardPageSAS extends WizardPage {
 
         /* Parameters from the user interface */
         final String location = comboLocation.getText();
-        final boolean containsHeader = btnContainsHeader.getSelection();
         final Charset charset = Charsets.getCharsetForName(Charsets.getNamesOfAvailableCharsets()[selectedCharset]);
 
         /* Variables needed for processing */
@@ -398,7 +364,7 @@ public class ImportWizardPageSAS extends WizardPage {
 
         final String[] firstLine;
         wizardColumns = new ArrayList<ImportWizardModelColumn>();
-        ImportConfigurationSAS config = new ImportConfigurationSAS(location, charset, containsHeader);
+        ImportConfigurationSAS config = new ImportConfigurationSAS(location, charset);
 
         /* Check whether there is at least one line in file and retrieve it */
         if (it.hasNext()) {
@@ -459,17 +425,14 @@ public class ImportWizardPageSAS extends WizardPage {
             TableColumn tableColumn = tableViewerColumn.getColumn();
             tableColumn.setWidth(100);
 
-            if (btnContainsHeader.getSelection()) {
-                tableColumn.setText(column.getColumn().getAliasName());
-                tableColumn.setToolTipText(Resources.getMessage("ImportWizardPageCSV.19") + ((ImportColumnCSV) column.getColumn()).getIndex()); //$NON-NLS-1$
-            }
+            tableColumn.setText(column.getColumn().getAliasName());
+            tableColumn.setToolTipText(Resources.getMessage("ImportWizardPageCSV.19") + ((ImportColumnCSV) column.getColumn()).getIndex()); //$NON-NLS-1$
         }
 
         ColumnViewerToolTipSupport.enableFor(tableViewerPreview, ToolTip.NO_RECREATE);
 
         /* Setup preview table */
         tableViewerPreview.setInput(previewData);
-        tablePreview.setHeaderVisible(btnContainsHeader.getSelection());
         tablePreview.setVisible(true);
         tablePreview.layout();
         tablePreview.setRedraw(true);

@@ -25,14 +25,7 @@ import java.nio.charset.Charset;
  * @author Karol Babioch
  * @author Fabian Prasser
  */
-public class ImportConfigurationSAS extends ImportConfigurationFile implements IImportConfigurationWithHeader { // NO_UCD
-
-    /**
-     * Indicates whether first row contains header (names of columns).
-     *
-     * @see {@link IImportConfigurationWithHeader}
-     */
-    private boolean      containsHeader;
+public class ImportConfigurationSAS extends ImportConfigurationFile { // NO_UCD
 
     /** The charset of the CSV file */
     private final Charset charset;
@@ -44,11 +37,9 @@ public class ImportConfigurationSAS extends ImportConfigurationFile implements I
      * @param containsHeader {@link #containsHeader}
      */
     public ImportConfigurationSAS(String fileLocation,
-                                  Charset charset,
-                                  boolean containsHeader) {
+                                  Charset charset) {
         setFileLocation(fileLocation);
         this.charset = charset;
-        this.containsHeader = containsHeader;
     }
 
     /**
@@ -67,8 +58,7 @@ public class ImportConfigurationSAS extends ImportConfigurationFile implements I
             throw new IllegalArgumentException("Column needs to be of type CSVColumn");
         }
 
-        if (!((ImportColumnCSV) column).isIndexSpecified() &&
-            !getContainsHeader()) {
+        if (!((ImportColumnCSV) column).isIndexSpecified()) {
             final String ERROR = "Adressing columns by name is only possible if the source contains a header";
             throw new IllegalArgumentException(ERROR);
         }
@@ -102,16 +92,6 @@ public class ImportConfigurationSAS extends ImportConfigurationFile implements I
     }
 
     /**
-     * Gets the contains header.
-     *
-     * @return {@link #containsHeader}
-     */
-    @Override
-    public boolean getContainsHeader() {
-        return containsHeader;
-    }
-
-    /**
      * Sets the indexes based on the header.
      *
      * @param row the row
@@ -133,15 +113,5 @@ public class ImportConfigurationSAS extends ImportConfigurationFile implements I
                 }
             }
         }
-    }
-
-    /**
-     * Sets the contains header.
-     *
-     * @param containsHeader {@link #containsHeader}
-     */
-    @Override
-    public void setContainsHeader(boolean containsHeader) {
-        this.containsHeader = containsHeader;
     }
 }
