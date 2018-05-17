@@ -39,6 +39,7 @@ import org.deidentifier.arx.io.ImportColumn;
 import org.deidentifier.arx.io.ImportColumnCSV;
 import org.deidentifier.arx.io.ImportConfigurationCSV;
 import org.deidentifier.arx.io.ImportConfigurationSAS;
+import org.deidentifier.arx.io.SASDataInput;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
@@ -373,20 +374,6 @@ public class ImportWizardPageSAS extends WizardPage {
         return Charset.defaultCharset();
     }
 
-    private Iterator<String[]> getIteratorForSasFile(SasFileReader sasFileReader) {
-        Object[][] rawData = sasFileReader.readAll();
-        List<String[]> dataAsStrings = new ArrayList<>();
-
-        for (int rowIndex = 0; rowIndex < rawData.length; rowIndex++) {
-            String[] row = new String[rawData[rowIndex].length];
-            for (int cellIndex = 0; cellIndex < rawData[rowIndex].length; cellIndex++) {
-                row[cellIndex] = rawData[rowIndex][cellIndex].toString();
-            }
-            dataAsStrings.add(row);
-        }
-        return dataAsStrings.iterator();
-    }
-
     /**
      * Reads in preview data
      *
@@ -406,9 +393,8 @@ public class ImportWizardPageSAS extends WizardPage {
         final Charset charset = Charsets.getCharsetForName(Charsets.getNamesOfAvailableCharsets()[selectedCharset]);
 
         /* Variables needed for processing */
-        InputStream inputStream = new FileInputStream(location);
-        SasFileReader sasFileReader = new SasFileReaderImpl(inputStream);
-        final Iterator<String[]> it = getIteratorForSasFile(sasFileReader);
+        SASDataInput sasDataInput = new SASDataInput(location);
+        final Iterator<String[]> it = sasDataInput.iterator();
 
         final String[] firstLine;
         wizardColumns = new ArrayList<ImportWizardModelColumn>();
@@ -418,7 +404,7 @@ public class ImportWizardPageSAS extends WizardPage {
         if (it.hasNext()) {
             firstLine = it.next();
         } else {
-            inputStream.close();
+            sasDataInput.close();
             throw new IOException(Resources.getMessage("ImportWizardPageCSV.17")); //$NON-NLS-1$
         }
 
@@ -442,7 +428,7 @@ public class ImportWizardPageSAS extends WizardPage {
             count++;
         }
 
-        inputStream.close();
+        sasDataInput.close();
 
         /* Remove first entry as it always contains name of columns */
         previewData.remove(0);

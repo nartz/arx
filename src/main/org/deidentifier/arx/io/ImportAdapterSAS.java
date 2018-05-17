@@ -99,10 +99,8 @@ public class ImportAdapterSAS extends ImportAdapter {
         cin = new CountingInputStream(new FileInputStream(new File(config.getFileLocation())));
 
         /* Get iterator */
-        InputStream inputStream = new FileInputStream(config.getFileLocation());
-        SasFileReader sasFileReader = new SasFileReaderImpl(inputStream);
-
-        it = getIteratorForSasFile(sasFileReader);
+        SASDataInput sasDataInput = new SASDataInput(config.getFileLocation());
+        it = sasDataInput.iterator();
 
         /* Check whether there is actual data within the CSV file */
         if (it.hasNext()) {
@@ -117,22 +115,8 @@ public class ImportAdapterSAS extends ImportAdapter {
         }
 
         // Create header
-        header = createHeader(sasFileReader.getColumns());
-        inputStream.close();
-    }
-
-    private Iterator<String[]> getIteratorForSasFile(SasFileReader sasFileReader) {
-        Object[][] rawData = sasFileReader.readAll();
-        List<String[]> dataAsStrings = new ArrayList<>();
-
-        for (int rowIndex = 0; rowIndex < rawData.length; rowIndex++) {
-            String[] row = new String[rawData[rowIndex].length];
-            for (int cellIndex = 0; cellIndex < rawData[rowIndex].length; cellIndex++) {
-                row[cellIndex] = rawData[rowIndex][cellIndex].toString();
-            }
-            dataAsStrings.add(row);
-        }
-        return dataAsStrings.iterator();
+        header = createHeader(sasDataInput.getColumns());
+        sasDataInput.close();
     }
 
     /**
