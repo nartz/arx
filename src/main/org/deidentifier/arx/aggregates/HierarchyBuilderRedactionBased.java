@@ -104,6 +104,13 @@ public class HierarchyBuilderRedactionBased<T> extends HierarchyBuilder<T> imple
         return new HierarchyBuilderRedactionBased<T>(alignmentOrder, redactionOrder, redactionCharacter);
     }
     
+    public static <T> HierarchyBuilderRedactionBased<T> create(Order alignmentOrder,
+                                                               Order redactionOrder,
+                                                               char paddingCharacter,
+                                                               char redactionCharacter) {
+        throw new UnsupportedOperationException("This method is only left behind to allow compilation of some examples");
+    }
+    
     /**
      * Values are aligned according to the alignmentOrder and redacted according to the redactionOrder.
      * Redacted characters are replaced with the given character. The padding character is used for padding.
