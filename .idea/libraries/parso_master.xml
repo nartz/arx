@@ -1,12 +1,7 @@
 <component name="libraryTable">
   <library name="parso-master">
-    <CLASSES>
-      <root url="file://$USER_HOME$/Downloads/parso-master" />
-    </CLASSES>
+    <CLASSES />
     <JAVADOC />
-    <SOURCES>
-      <root url="file://$USER_HOME$/Downloads/parso-master/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/parso-master/src/test/java" />
-    </SOURCES>
+    <SOURCES />
   </library>
 </component>
