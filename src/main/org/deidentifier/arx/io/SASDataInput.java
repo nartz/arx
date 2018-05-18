@@ -45,7 +45,7 @@ public class SASDataInput {
                     currentIndex++;
                     return row;
                 } catch (IOException e) {
-                    throw new NoSuchElementException();
+                    return null;
                 }
             }
         };

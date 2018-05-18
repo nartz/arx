@@ -60,6 +60,7 @@ public class ImportWizardModel {
         /**  Constant */
         EXCEL,
 
+        /**  Constant */
         SAS
     }
 
