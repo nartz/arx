@@ -20,23 +20,20 @@ package org.deidentifier.arx.io;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import com.epam.parso.Column;
-import com.epam.parso.SasFileReader;
-import com.epam.parso.impl.SasFileReaderImpl;
 import org.apache.commons.io.input.CountingInputStream;
 import org.deidentifier.arx.DataType;
 
 /**
- * Import adapter for CSV files
+ * Import adapter for SAS files
  *
- * This adapter can import data from a CSV file. The CSV file itself is
- * described by an appropriate {@link ImportConfigurationCSV} object. Internally
- * this class makes use of {@link CSVDataInput} to read the CSV file on a line
+ * This adapter can import data from a SAS file. The SAS file itself is
+ * described by an appropriate {@link ImportConfigurationSAS} object. Internally
+ * this class makes use of {@link SASDataInput} to read the SAS file on a line
  * by line basis. A counting input stream (@link CountingInputStream} is used in
  * order for {@link #getProgress() to be able to return the percentage of data
  * that has already been processed.
@@ -46,10 +43,10 @@ import org.deidentifier.arx.DataType;
  */
 public class ImportAdapterSAS extends ImportAdapter {
 
-    /** The configuration describing the CSV file being used. */
+    /** The configuration describing the SAS file being used. */
     private ImportConfigurationSAS config;
 
-    /** The size of the CSV file. */
+    /** The size of the SAS file. */
     private long                   bytesTotal;
 
     /**
@@ -67,7 +64,7 @@ public class ImportAdapterSAS extends ImportAdapter {
     private Iterator<String[]>     it;
 
     /**
-     * Contains the last row as returned by {@link CSVDataInput#iterator()}.
+     * Contains the last row as returned by {@link SASDataInput#iterator()}.
      *
      * @note This row cannot be simply returned, but needs to be further
      *       processed, e.g. to return only selected columns.
@@ -76,10 +73,6 @@ public class ImportAdapterSAS extends ImportAdapter {
 
     /**
      * Indicates whether the first row has already been returned
-     *
-     * The first row contains the name of the columns. Depending upon {@link #containsHeader} and whether the name of the column has been
-     * assigned explicitly, this is either the value of the file itself, the
-     * value defined by the user, or a default value.
      */
     private boolean                headerReturned = false;
 

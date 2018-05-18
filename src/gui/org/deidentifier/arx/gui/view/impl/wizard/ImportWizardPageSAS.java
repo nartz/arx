@@ -17,23 +17,15 @@
 
 package org.deidentifier.arx.gui.view.impl.wizard;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
-import com.epam.parso.SasFileReader;
-import com.epam.parso.impl.SasFileReaderImpl;
 import org.deidentifier.arx.DataType;
 import org.deidentifier.arx.gui.resources.Charsets;
 import org.deidentifier.arx.gui.resources.Resources;
 import org.deidentifier.arx.gui.view.SWTUtil;
-import org.deidentifier.arx.io.CSVSyntax;
 import org.deidentifier.arx.io.ImportAdapter;
 import org.deidentifier.arx.io.ImportColumn;
 import org.deidentifier.arx.io.ImportColumnCSV;
@@ -71,7 +63,7 @@ import com.univocity.parsers.common.TextParsingException;
 public class ImportWizardPageSAS extends WizardPage {
 
     /**
-     * Label provider for CSV columns
+     * Label provider for SAS columns
      *
      * A new instance of this object will be initiated for each column of
      * {@link tableViewerPreview}. This class holds the index of the
@@ -140,7 +132,7 @@ public class ImportWizardPageSAS extends WizardPage {
     private int                                selectedCharset    = 0;
 
     /** Data for preview. */
-    private final ArrayList<String[]>          previewData       = new ArrayList<String[]>();
+    private final ArrayList<String[]>          previewData       = new ArrayList<>();
 
     /**
      * Creates a new instance of this page and sets its title and description.
@@ -151,8 +143,8 @@ public class ImportWizardPageSAS extends WizardPage {
     {
 
         super("WizardImportSasPage"); //$NON-NLS-1$
-        setTitle("SAS- test2"); //$NON-NLS-1$
-        setDescription(Resources.getMessage("ImportWizardPageCSV.6")); //$NON-NLS-1$
+        setTitle("SAS"); //$NON-NLS-1$
+        setDescription(Resources.getMessage("ImportWizardPageSAS.6")); //$NON-NLS-1$
         this.wizardImport = wizardImport;
 
     }
@@ -175,7 +167,7 @@ public class ImportWizardPageSAS extends WizardPage {
         /* Location label */
         lblLocation = new Label(container, SWT.NONE);
         lblLocation.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        lblLocation.setText(Resources.getMessage("ImportWizardPageCSV.7")); //$NON-NLS-1$
+        lblLocation.setText(Resources.getMessage("ImportWizardPageSAS.7")); //$NON-NLS-1$
 
         /* Combo box for selection of file */
         comboLocation = new Combo(container, SWT.READ_ONLY);
@@ -194,7 +186,7 @@ public class ImportWizardPageSAS extends WizardPage {
 
         /* Button to open file selection dialog */
         btnChoose = new Button(container, SWT.NONE);
-        btnChoose.setText(Resources.getMessage("ImportWizardPageCSV.8")); //$NON-NLS-1$
+        btnChoose.setText(Resources.getMessage("ImportWizardPageSAS.8")); //$NON-NLS-1$
         btnChoose.addSelectionListener(new SelectionAdapter() {
 
             /**
@@ -230,7 +222,7 @@ public class ImportWizardPageSAS extends WizardPage {
         lblCharset = new Label(container, SWT.NONE);
         lblCharset.setVisible(false);
         lblCharset.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-        lblCharset.setText(Resources.getMessage("ImportWizardPageCSV.20")); //$NON-NLS-1$
+        lblCharset.setText(Resources.getMessage("ImportWizardPageSAS.20")); //$NON-NLS-1$
 
         /* Charset combobox */
         comboCharset = new Combo(container, SWT.READ_ONLY);
@@ -312,7 +304,7 @@ public class ImportWizardPageSAS extends WizardPage {
             setErrorMessage(e.getMessage());
             return;
         } catch (TextParsingException e) {
-            setErrorMessage(Resources.getMessage("ImportWizardPageCSV.16")); //$NON-NLS-1$
+            setErrorMessage(Resources.getMessage("ImportWizardPageSAS.16")); //$NON-NLS-1$
             return;
         } catch (RuntimeException e) {
             if (e.getCause()!=null) {
@@ -336,16 +328,11 @@ public class ImportWizardPageSAS extends WizardPage {
         setPageComplete(true);
     }
 
-    private Charset getCharset() {
-        // TODO: get charset from user
-        return Charset.defaultCharset();
-    }
-
     /**
      * Reads in preview data
      *
      * This goes through up to {@link ImportWizardModel#PREVIEW_MAX_LINES} lines
-     * within the appropriate file and reads them in. It uses {@link ImportAdapter} in combination with {@link ImportConfigurationCSV} to actually read in the data.
+     * within the appropriate file and reads them in. It uses {@link ImportAdapter} in combination with {@link ImportConfigurationSAS} to actually read in the data.
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
@@ -371,7 +358,7 @@ public class ImportWizardPageSAS extends WizardPage {
             firstLine = it.next();
         } else {
             sasDataInput.close();
-            throw new IOException(Resources.getMessage("ImportWizardPageCSV.17")); //$NON-NLS-1$
+            throw new IOException(Resources.getMessage("ImportWizardPageSAS.17")); //$NON-NLS-1$
         }
 
         /* Iterate over columns and add it to {@link #allColumns} */
@@ -401,7 +388,7 @@ public class ImportWizardPageSAS extends WizardPage {
 
         /* Check whether there is actual any data */
         if (previewData.size() == 0) {
-            throw new IOException(Resources.getMessage("ImportWizardPageCSV.18")); //$NON-NLS-1$
+            throw new IOException(Resources.getMessage("ImportWizardPageSAS.18")); //$NON-NLS-1$
         }
 
         /*
@@ -426,7 +413,7 @@ public class ImportWizardPageSAS extends WizardPage {
             tableColumn.setWidth(100);
 
             tableColumn.setText(column.getColumn().getAliasName());
-            tableColumn.setToolTipText(Resources.getMessage("ImportWizardPageCSV.19") + ((ImportColumnCSV) column.getColumn()).getIndex()); //$NON-NLS-1$
+            tableColumn.setToolTipText(Resources.getMessage("ImportWizardPageSAS.19") + ((ImportColumnCSV) column.getColumn()).getIndex()); //$NON-NLS-1$
         }
 
         ColumnViewerToolTipSupport.enableFor(tableViewerPreview, ToolTip.NO_RECREATE);

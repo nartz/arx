@@ -4,14 +4,12 @@ import com.epam.parso.Column;
 import com.epam.parso.SasFileReader;
 import com.epam.parso.impl.SasFileReaderImpl;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Created by kenedy on 5/16/18.
@@ -47,7 +45,7 @@ public class SASDataInput {
                     currentIndex++;
                     return row;
                 } catch (IOException e) {
-                    return null;
+                    throw new NoSuchElementException();
                 }
             }
         };

@@ -27,7 +27,7 @@ import java.nio.charset.Charset;
  */
 public class ImportConfigurationSAS extends ImportConfigurationFile { // NO_UCD
 
-    /** The charset of the CSV file */
+    /** The charset of the SAS file */
     private final Charset charset;
 
     /**
@@ -84,7 +84,7 @@ public class ImportConfigurationSAS extends ImportConfigurationFile { // NO_UCD
     }
 
     /**
-     * Returns the charset of the CSV file.
+     * Returns the charset of the SAS file.
      * @return
      */
     public Charset getCharset() {
